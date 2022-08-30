@@ -19,9 +19,9 @@ const runCompiler = async (req, res) => {
     });
     return result;
   }
-  const userCodeRoute = `./user_tmp_codes/${userID}`;
+  const userCodeRoute = `./user_tmp_codes/${userID}.js`;
   fs.writeFileSync(userCodeRoute, codes);
-  const compilerResult = await runCommand(`docker run -v ${userCodeRoute}:user_codes.js --rm node-log-tool`);
+  const compilerResult = await runCommand(`docker run -v ${userCodeRoute}:/app/user_codes.js --rm node-log-tool`);
   res.status(200).json(compilerResult);
 };
 
