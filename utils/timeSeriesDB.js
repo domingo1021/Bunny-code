@@ -1,16 +1,19 @@
-require('dotenv');
+require('dotenv').config();
 const { InfluxDB } = require('@influxdata/influxdb-client');
 
 // You can generate an API token from the "API Tokens Tab" in the UI
-const token = process.env.INFLUXDB_TOKEN;
-const org = 'BunnyCode';
-const bucket = 'bunny';
+const {
+  INFLUX_URL, INFLUX_TOKEN, INFLUX_ORG, INFLUX_BUCKET,
+} = process.env;
 
-const client = new InfluxDB({ url: 'http://54.248.6.0:8086', token });
+console.log(INFLUX_URL, INFLUX_TOKEN, INFLUX_ORG, INFLUX_BUCKET);
 
+const client = new InfluxDB({ url: INFLUX_URL, token: INFLUX_TOKEN });
+
+// Write data
 const { Point } = require('@influxdata/influxdb-client');
 
-const writeApi = client.getWriteApi(org, bucket);
+const writeApi = client.getWriteApi(INFLUX_ORG, INFLUX_BUCKET);
 writeApi.useDefaultTags({ host: 'host1' });
 
 const point = new Point('mem').floatField('used_percent', 23.43234543);
@@ -26,7 +29,8 @@ writeApi
     console.log('Finished ERROR');
   });
 
-const queryApi = client.getQueryApi(org);
+// Flux query
+const queryApi = client.getQueryApi(INFLUX_ORG);
 
 const query = 'from(bucket: "bunny") |> range(start: -1h)';
 queryApi.queryRows(query, {
