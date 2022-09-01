@@ -1,10 +1,12 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 
 const { SERVER_PORT, API_VERSION } = process.env;
 
 const app = express();
 
+app.use(cors());
 app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -23,6 +25,8 @@ app.use((err, req, res, next) => {
   res.status(500).send('Internal Server Error');
 });
 
-app.listen(SERVER_PORT, () => {
+const httpServer = app.listen(SERVER_PORT, () => {
   console.log(`Listening at port ${SERVER_PORT}`);
 });
+
+module.exports = httpServer;

@@ -27,11 +27,11 @@ writeApi
 // Flux query
 const queryApi = influxClient.getQueryApi(INFLUX_ORG);
 
+// filter
 const query = 'from(bucket: "bunny") |> range(start: 0)';
 queryApi.queryRows(query, {
   next(row, tableMeta) {
     const o = tableMeta.toObject(row);
-    // console.log(o);
     console.log(`${o._time} ${o._measurement}: host=${o.host} ${o._field}=${o._value}`);
   },
   error(error) {
