@@ -18,6 +18,8 @@
   },
   "homepage": "https://github.com/domingo1021/Bunny-code#readme",
   "dependencies": {
+    "@influxdata/influxdb-client": "^1.29.0",
+    "@influxdata/influxdb-client-apis": "^1.29.0",
     "dotenv": "^16.0.1",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
