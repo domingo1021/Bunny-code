@@ -20,12 +20,14 @@
   "dependencies": {
     "@influxdata/influxdb-client": "^1.29.0",
     "@influxdata/influxdb-client-apis": "^1.29.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.0.1",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
     "express": "^4.18.1",
     "fs": "^0.0.1-security",
-    "prettier": "^2.7.1"
+    "prettier": "^2.7.1",
+    "socket.io": "^4.5.1"
   },
   "devDependencies": {
     "eslint": "^8.23.0",
