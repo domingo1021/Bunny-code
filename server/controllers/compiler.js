@@ -1,5 +1,94 @@
+require('dotenv').config();
 const { exec } = require('child_process');
 const fs = require('fs');
+const timeDB = require('../../utils/timeSeriesDB');
+
+const { INFLUX_ORG, INFLUX_BUCKET } = process.env;
+const KEY_MANAGE = ['enter', 'up', 'down'];
+
+const writeFile = (userID, projectID) => {
+
+};
+
+const writeRecord = async (req, res) => {
+  // check timestamp and datetime transformation. --> checked 是一樣的
+  // console.log(data.timestamp, new Date(+data.timestamp.substring(0, 13)));
+  // TODO: insert into S3 storage with file snapshot.
+  // TODO: insert into mysql database with specific datetime （start & end).
+  const { userID, projectID } = req.body;
+  const batchData = JSON.parse(req.body.batchData);
+  console.log(batchData);
+  const writeApi = timeDB.getWriteApi(INFLUX_ORG, INFLUX_BUCKET, 'ns');
+  const points = batchData.map((data) => {
+    if (KEY_MANAGE.includes(data.action)) {
+      return `${userID},project=${projectID},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
+    }
+    return `${userID},project=${projectID},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
+  });
+
+  writeApi.writeRecords(points);
+
+  let response;
+  try {
+    await writeApi.close();
+    response = 'success';
+  } catch (error) {
+    response = 'failed';
+  }
+  return res.status(200).send(response);
+
+  // TODO: write data into influx db
+  // TODO: choose: batch or separately
+  // TODO: send to MySQL db (start time, end time)
+  // Note: 使用者每按一次 save 都是在一個新的 MySQL record
+};
+
+const queryRecord = async (req, res) => {
+  // TODO: get time from MySQL DB.
+  const userID = 1;
+  const projectID = 1;
+  const startTime = '2022-09-01T04:25:32.985Z';
+  const stopTime = '2022-10-30T04:25:32.47Z';
+  // Flux query
+  const queryApi = timeDB.getQueryApi(INFLUX_ORG);
+
+  // filter
+  const query = `from(bucket: "bunny")
+                  |> range(start: ${startTime}, stop: ${stopTime})
+                  |> group(columns: ["_measurement"])
+                  |> filter(fn: (r) => r["_measurement"] == "${userID}")
+                  |> filter(fn: (r) => r["project"] == "${projectID}")
+                  |> sort(columns: ["_time"])
+                `;
+
+  const queryResponse = await new Promise((resolve, reject) => {
+    const responseData = [];
+    // queryApi.queryLines;
+    queryApi.queryRows(query, {
+      next(row, tableMeta) {
+        const responseRow = tableMeta.toObject(row);
+        const tmpCobject = {
+          userID: responseRow._measurement,
+          project: responseRow.project,
+          action: responseRow.action,
+          index: responseRow.index,
+          line: responseRow.line,
+          code: responseRow._value,
+          timestamp: responseRow._time,
+
+        };
+        responseData.push(tmpCobject);
+      },
+      error(error) {
+        reject('error occur');
+      },
+      complete() {
+        resolve(responseData);
+      },
+    });
+  });
+  return res.status(200).json({ data: queryResponse });
+};
 
 const runCompiler = async (req, res) => {
   const { userID } = req.body;
@@ -29,4 +118,6 @@ const runCompiler = async (req, res) => {
   return res.status(200).json(compilerResult);
 };
 
-module.exports = { runCompiler };
+module.exports = {
+  runCompiler, writeFile, writeRecord, queryRecord,
+};

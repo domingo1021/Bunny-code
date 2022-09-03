@@ -1,6 +1,6 @@
 const { Server } = require('socket.io');
 const httpServer = require('./app');
-const { writeRecord, queryRecord } = require('./socket/codeRecord');
+// const { writeRecord, queryRecord } = require('./server/controllers/codeRecord');
 
 const io = new Server(httpServer, {
   cors: {
@@ -11,20 +11,17 @@ const io = new Server(httpServer, {
   },
 });
 
-// TODO: socket auth
+// TODO: socket auth with middleware
 
 io.on('connection', async (socket) => {
+  socket.userID = 1;
   console.log('a user connected');
-  socket.on('save', async (codes) => {
-    const userID = 1;
-    const projectID = 1;
-    const responseMsg = await writeRecord(userID, projectID, JSON.parse(codes));
-    socket.emit('return', responseMsg);
-    // const records = await queryRecord(1, 1, '2022-09-02T04:25:32.985Z', '2022-09-03T04:25:32.47Z');
-    // console.log(records);
+  socket.on('leave workspace', async (msg) => {
+    // TODO: 修正該 socket 原本連線的 project version 的 status.
+    console.log('user leaving workspace.', msg);
   });
-  const start = '2022-09-02T04:25:32.985Z';
-  const end = '2022-09-03T04:25:32.47Z';
-  const records = await queryRecord('1', '1', start, end);
-  console.log(records);
+  socket.on('disconnect', () => {
+    // TODO: 修正該 socket 原本連線的 project version 的 status.
+    console.log(`#${socket.userID} user disconnection.`);
+  });
 });
