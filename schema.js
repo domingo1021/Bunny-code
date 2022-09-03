@@ -36,7 +36,7 @@ const projectTable = `
     star_count INT UNSIGNED NOT NULL DEFAULT 0,
     is_public TINYINT(1) NOT NULL,
     user_id INT UNSIGNED NOT NULL,
-    deleted TINYINT(1) NOT NULL,
+    deleted TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES user(user_id),
     UNIQUE (project_name),
     PRIMARY KEY (project_id)
@@ -48,7 +48,7 @@ const versionTable = `
     version_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     version_name VARCHAR(30) NOT NULL,
     project_id INT UNSIGNED NOT NULL,
-    deleted TINYINT(1) NOT NULL,
+    deleted TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (project_id) REFERENCES project(project_id),
     PRIMARY KEY (version_id)
   );
@@ -61,7 +61,7 @@ const fileTable = `
     file_name VARCHAR(30) NOT NULL,
     file_url VARCHAR(100) NOT NULL,
     version_id INT UNSIGNED NOT NULL,
-    deleted TINYINT(1) NOT NULL,
+    deleted TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (version_id) REFERENCES version(version_id),
     PRIMARY KEY (file_id)
   );
@@ -70,10 +70,10 @@ const fileTable = `
 const recordTable = `
   CREATE TABLE IF NOT EXISTS record(
     record_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    start_time timestamp NOT NULL,
-    end_time timestamp NOT NULL,
+    start_time datetime NOT NULL,
+    end_time datetime NOT NULL,
     version_id INT UNSIGNED NOT NULL,
-    deleted TINYINT(1) NOT NULL,
+    deleted TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (version_id) REFERENCES version(version_id),
     PRIMARY KEY (record_id)
   );
@@ -109,7 +109,7 @@ const battleTable = `
     second_user_id INT UNSIGNED NOT NULL,
     is_public TINYINT(1) NOT NULL,
     winner_id INT,
-    deleted TINYINT(1) NOT NULL,
+    deleted TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (first_user_id) REFERENCES user(user_id),
     FOREIGN KEY (second_user_id) REFERENCES user(user_id),
     UNIQUE (battle_name),
@@ -130,31 +130,21 @@ const rolePermissionTable = `
 const permissionTable = `
 
 `;
-
-pool.execute(userTable).then(() => console.log('success')).catch((error) => {
-  console.log(error);
-});
-pool.execute(relationshipTable).then(() => console.log('success')).catch((error) => {
-  console.log(error);
-});
-pool.execute(projectTable).then(() => console.log('success')).catch((error) => {
-  console.log(error);
-});
-pool.execute(versionTable).then(() => console.log('success')).catch((error) => {
-  console.log(error);
-});
-pool.execute(fileTable).then(() => console.log('success')).catch((error) => {
-  console.log(error);
-});
-pool.execute(recordTable).then(() => console.log('success')).catch((error) => {
-  console.log(error);
-});
-pool.execute(streamTable).then(() => console.log('success')).catch((error) => {
-  console.log(error);
-});
-pool.execute(messageTable).then(() => console.log('success')).catch((error) => {
-  console.log(error);
-});
-pool.execute(battleTable).then(() => console.log('success')).catch((error) => {
-  console.log(error);
-});
+async function createAllTable() {
+  try {
+    await pool.execute(userTable);
+    await pool.execute(relationshipTable);
+    await pool.execute(projectTable);
+    await pool.execute(versionTable);
+    await pool.execute(fileTable);
+    await pool.execute(recordTable);
+    await pool.execute(streamTable);
+    await pool.execute(messageTable);
+    await pool.execute(battleTable);
+  } catch (error) {
+    console.log(error);
+  } finally {
+    console.log('success');
+  }
+}
+createAllTable();
