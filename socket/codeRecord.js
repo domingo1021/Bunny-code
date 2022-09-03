@@ -12,6 +12,7 @@ const writeRecord = async (userID, projectID, batchData) => {
     }
     return `${userID},project=${projectID},action="${data.action}",line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
   });
+  // console.log(points);
   writeApi.writeRecords(points);
 
   let response;
@@ -30,17 +31,22 @@ const writeRecord = async (userID, projectID, batchData) => {
 };
 
 const queryRecord = async (userID, projectID, startTime, endTime) => {
+  // TODO: get time from MySQL DB.
+
   // Flux query
   const queryApi = timeDB.getQueryApi(INFLUX_ORG);
 
   // filter
   const query = `from(bucket: "bunny")
-                  |> range(start: 0)
+                  |> range(start: ${startTime}, stop: ${endTime})
+                  |> group(columns: ["_measurement"])
                   |> filter(fn: (r) => r["_measurement"] == "${userID}")
+                  |> filter(fn: (r) => r["project"] == "${projectID}")
+                  |> sort(columns: ["_time"])
                 `;
   return new Promise((resolve, reject) => {
     const responseData = [];
-    queryApi.queryLines;
+    // queryApi.queryLines;
     queryApi.queryRows(query, {
       next(row, tableMeta) {
         const responseRow = tableMeta.toObject(row);

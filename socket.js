@@ -23,8 +23,8 @@ io.on('connection', async (socket) => {
     // const records = await queryRecord(1, 1, '2022-09-02T04:25:32.985Z', '2022-09-03T04:25:32.47Z');
     // console.log(records);
   });
-  const start = `${new Date('2022-09-02T04:25:32.985Z').getTime()}000000}`;
-  const end = `${new Date('2022-09-03T04:25:32.47Z').getTime()}000000}`;
+  const start = '2022-09-02T04:25:32.985Z';
+  const end = '2022-09-03T04:25:32.47Z';
   const records = await queryRecord('1', '1', start, end);
   console.log(records);
 });
