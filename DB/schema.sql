@@ -15,12 +15,12 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
+CREATE DATABASE bunny_code;
+use bunny_code;
+
 --
 -- Table structure for table `battle`
 --
-
-CREATE DATABASE bunny_code;
-use database bunny_code
 
 DROP TABLE IF EXISTS `battle`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -90,7 +90,7 @@ CREATE TABLE `file` (
   `file_id` int unsigned NOT NULL AUTO_INCREMENT,
   `file_name` varchar(30) NOT NULL,
   `file_url` varchar(100) NOT NULL,
-  `log` timestamp NOT NULL,
+  `log` char(13) NOT NULL,
   `version_id` int unsigned NOT NULL,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`file_id`),
@@ -293,4 +293,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2022-09-04 16:30:24
+-- Dump completed on 2022-09-04 16:45:30
