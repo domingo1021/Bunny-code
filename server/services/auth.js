@@ -32,6 +32,7 @@ const jwtAuthenticate = async (req, res, next) => {
       });
     });
     req.user = decoded.payload;
+    console.log(decoded.payload);
   } catch (error) {
     return res.status(403).send({ msg: 'Token authorization failed.' });
   }
@@ -78,22 +79,24 @@ const authorization = async (req, res, next) => {
   return next();
 };
 
-const blockNotSelf = (blockCategories) => function (req, res, next) {
-  console.log('User category: ', req.clientCategory);
-  if (
-    blockCategories.includes(CLIENT_CATEGORY.visitor)
-    && req.clientCategory === CLIENT_CATEGORY.visitor
-  ) {
-    return res.status(401).send({ error: 'Unauthorized' });
-  }
-  if (
-    blockCategories.includes(CLIENT_CATEGORY.otherMember)
-    && req.clientCategory === CLIENT_CATEGORY.otherMember
-  ) {
-    return res.status(403).send({ error: 'Forbidden' });
-  }
-  return next();
-};
+function blockNotSelf(blockCategories) {
+  return (req, res, next) => {
+    console.log('User category: ', req.clientCategory);
+    if (
+      blockCategories.includes(CLIENT_CATEGORY.visitor)
+      && req.clientCategory === CLIENT_CATEGORY.visitor
+    ) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
+    if (
+      blockCategories.includes(CLIENT_CATEGORY.otherMember)
+      && req.clientCategory === CLIENT_CATEGORY.otherMember
+    ) {
+      return res.status(403).send({ error: 'Forbidden' });
+    }
+    return next();
+  };
+}
 
 const blockSelf = (req, res, next) => {
   if (req.clientCategory === CLIENT_CATEGORY.self) {
