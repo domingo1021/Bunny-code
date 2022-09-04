@@ -15,6 +15,9 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
+CREATE DATABASE bunny_code;
+use bunny_code;
+
 --
 -- Table structure for table `battle`
 --
@@ -87,6 +90,7 @@ CREATE TABLE `file` (
   `file_id` int unsigned NOT NULL AUTO_INCREMENT,
   `file_name` varchar(30) NOT NULL,
   `file_url` varchar(100) NOT NULL,
+  `log` char(13) NOT NULL,
   `version_id` int unsigned NOT NULL,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`file_id`),
@@ -118,12 +122,13 @@ CREATE TABLE `project` (
   `star_count` int unsigned NOT NULL DEFAULT '0',
   `is_public` tinyint(1) NOT NULL,
   `user_id` int unsigned NOT NULL,
+  `create_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`project_id`),
   UNIQUE KEY `project_name` (`project_name`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `project_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -132,6 +137,7 @@ CREATE TABLE `project` (
 
 LOCK TABLES `project` WRITE;
 /*!40000 ALTER TABLE `project` DISABLE KEYS */;
+INSERT INTO `project` VALUES (1,'bunny_code',0,0,1,1,'2022-09-04 15:12:02',0);
 /*!40000 ALTER TABLE `project` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -230,12 +236,12 @@ CREATE TABLE `user` (
   `email` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8_general_ci NOT NULL,
   `password` binary(60) NOT NULL,
   `follower_count` int unsigned NOT NULL DEFAULT '0',
-  `profile` varchar(100) NOT NULL,
+  `profile` varchar(100) DEFAULT NULL,
   `picture` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `user_name` (`user_name`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -244,6 +250,7 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
+INSERT INTO `user` VALUES (1,'domingo','domingo0204@gmail.com',_binary '$2b$05$0KGh1pdnInnyJnUZmfNMnO/Y2S7g5CLm0tscMMpvKy11HC/FTxIo6',0,'Test 帳號',NULL),(7,'domingo1','domingo@gmail.com',_binary '$2b$05$UUxFiQO0KFKQR4F7n5LH3.UllhPQnNAAIfSZNrtQNaJS480AXtJI6',0,NULL,NULL);
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -257,12 +264,14 @@ DROP TABLE IF EXISTS `version`;
 CREATE TABLE `version` (
   `version_id` int unsigned NOT NULL AUTO_INCREMENT,
   `version_name` varchar(30) NOT NULL,
+  `version_number` int unsigned NOT NULL DEFAULT '0',
   `project_id` int unsigned NOT NULL,
+  `editing` tinyint(1) NOT NULL DEFAULT '0',
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`version_id`),
   KEY `project_id` (`project_id`),
   CONSTRAINT `version_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -271,6 +280,7 @@ CREATE TABLE `version` (
 
 LOCK TABLES `version` WRITE;
 /*!40000 ALTER TABLE `version` DISABLE KEYS */;
+INSERT INTO `version` VALUES (2,'first version',0,1,0,0);
 /*!40000 ALTER TABLE `version` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -283,4 +293,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2022-09-03 12:32:11
+-- Dump completed on 2022-09-04 16:45:30

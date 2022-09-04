@@ -1,13 +1,28 @@
 require('dotenv').config();
 const { exec } = require('child_process');
 const fs = require('fs');
+const Compiler = require('../models/compiler');
+const pool = require('../../utils/rmdb');
 const timeDB = require('../../utils/timeSeriesDB');
 
 const { INFLUX_ORG, INFLUX_BUCKET } = process.env;
 const KEY_MANAGE = ['enter', 'up', 'down'];
 
-const writeFile = (userID, projectID) => {
-
+const writeFile = async (req, res) => {
+  // store S3 result & related info into MySQL DB
+  const { versionID } = req.body;
+  const { s3Results, filenames, log } = req;
+  const connection = await pool.getConnection();
+  try {
+    await Promise.all(s3Results.map(async (result, index) => {
+      await Compiler.writeFile(filenames[index], result.key, log, versionID);
+    }));
+  } catch (error) {
+    connection.release();
+    console.log(error);
+    return res.send('error occur');
+  }
+  return res.send('success');
 };
 
 const writeRecord = async (req, res) => {
