@@ -12,7 +12,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // API routes
-app.use(`/api/${API_VERSION}`, require('./server/routes/compiler'));
+app.use(`/api/${API_VERSION}`, [
+  require('./server/routes/user'),
+  require('./server/routes/compiler'),
+]);
 
 // Page not found
 app.use((req, res, next) => {
