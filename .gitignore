@@ -4,6 +4,7 @@ node_modules
 
 .env
 
+# for test purpose.
 user_tmp_codes
-
 save.json
+test.js
