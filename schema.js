@@ -36,6 +36,7 @@ const projectTable = `
     star_count INT UNSIGNED NOT NULL DEFAULT 0,
     is_public TINYINT(1) NOT NULL,
     user_id INT UNSIGNED NOT NULL,
+    create_at datetime DEFAULT CURRENT_TIMESTAMP,
     deleted TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES user(user_id),
     UNIQUE (project_name),
@@ -47,6 +48,7 @@ const versionTable = `
   CREATE TABLE IF NOT EXISTS version(
     version_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     version_name VARCHAR(30) NOT NULL,
+    version_number INT UNSIGNED NOT NULL DEFAULT 0,
     project_id INT UNSIGNED NOT NULL,
     editing TINYINT(1) NOT NULL DEFAULT 0,
     deleted TINYINT(1) NOT NULL DEFAULT 0,
@@ -61,6 +63,7 @@ const fileTable = `
     file_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     file_name VARCHAR(30) NOT NULL,
     file_url VARCHAR(100) NOT NULL,
+    log CHAR(13) NOT NULL,
     version_id INT UNSIGNED NOT NULL,
     deleted TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (version_id) REFERENCES version(version_id),
