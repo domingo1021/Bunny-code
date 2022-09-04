@@ -48,6 +48,7 @@ const versionTable = `
     version_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     version_name VARCHAR(30) NOT NULL,
     project_id INT UNSIGNED NOT NULL,
+    editing TINYINT(1) NOT NULL DEFAULT 0,
     deleted TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (project_id) REFERENCES project(project_id),
     PRIMARY KEY (version_id)
