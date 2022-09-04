@@ -18,6 +18,9 @@
 --
 -- Table structure for table `battle`
 --
+CREATE DATABASE bunny_code;
+use bunny_code;
+
 
 DROP TABLE IF EXISTS `battle`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
