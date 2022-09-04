@@ -9,7 +9,7 @@ const userTable = `
     email NVARCHAR(255) NOT NULL,
     password BINARY(60) NOT NULL,
     follower_count INT UNSIGNED NOT NULL DEFAULT 0,
-    profile VARCHAR(100) NOT NULL,
+    profile VARCHAR(100),
     picture VARCHAR(100),
     UNIQUE (user_name),
     UNIQUE (email),
