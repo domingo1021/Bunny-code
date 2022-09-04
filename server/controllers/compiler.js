@@ -11,10 +11,10 @@ const KEY_MANAGE = ['enter', 'up', 'down'];
 const writeFile = async (req, res) => {
   // store S3 result & related info into MySQL DB
   const { versionID } = req.body;
-  const { s3Reuslts, filenames, log } = req;
+  const { s3Results, filenames, log } = req;
   const connection = await pool.getConnection();
   try {
-    await Promise.all(s3Reuslts.map(async (result, index) => {
+    await Promise.all(s3Results.map(async (result, index) => {
       await Compiler.writeFile(filenames[index], result.key, log, versionID);
     }));
   } catch (error) {
