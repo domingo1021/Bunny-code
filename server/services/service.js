@@ -12,13 +12,13 @@ const fileUploader = multer({
     const fileSize = parseInt(req.headers['content-length']);
     if (file.mimetype !== 'application/javascript') {
       cb(new FileUploadException('Only javascript file is accepted'));
-    } else if (fileSize >= 22282810) {
+    } else if (fileSize >= 1024 * 1024 * 3) {
       cb(new FileUploadException('File too large.'));
     } else {
       cb(null, true);
     }
   },
-}).single('file');
+}).array('files', 5);
 
 function wrapAsync(fn) {
   return (req, res, next) => {
