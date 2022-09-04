@@ -63,7 +63,7 @@ const fileTable = `
     file_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     file_name VARCHAR(30) NOT NULL,
     file_url VARCHAR(100) NOT NULL,
-    log TIMESTAMP NOT NULL,
+    log CHAR(13) NOT NULL,
     version_id INT UNSIGNED NOT NULL,
     deleted TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (version_id) REFERENCES version(version_id),
