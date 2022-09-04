@@ -32,6 +32,7 @@ const userSignIn = async (req, res) => {
   }
   // Verified, Send JWT.
   const payload = {
+    id: userInfo.user_id,
     name: userInfo.user_name,
     email,
     picture: userInfo.picture,
@@ -79,6 +80,7 @@ const userSignUp = async (req, res) => {
 
   // JWT token
   const payload = {
+    id: userID,
     name: user.name,
     email: user.email,
     provider: 'native',
