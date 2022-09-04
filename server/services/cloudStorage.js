@@ -26,18 +26,25 @@ const uploadS3 = async (req, res, next) => {
   req.s3Results = [];
   req.filenames = [];
   req.log = logNumber;
+  let hasResult = false;
   await Promise.all(targetFiles.map(async (tmpFile) => {
     let folderRoutes;
+    if (!reqCategory) {
+      hasResult = false;
+      return;
+    }
     switch (reqCategory) {
       case 'code_file':
+        hasResult = true;
         folderRoutes = preparePrefix([process.env.S3_RECORD_FOLDER, `user_${user.id}`, `project_${projectID}`, `version_${versionID}`]);
         folderRoutes += `${logNumber}-`;
         break;
       case 'user_picture':
+        hasResult = true;
         folderRoutes = preparePrefix([process.env.S3_USER_IMAGE_FOLDER, `user_${user.id}`]);
         break;
       default:
-        return res.status(400).send({ msg: 'Bad request, please provide request catecory.' });
+        break;
     }
     const s3 = new S3();
     const param = {
@@ -48,6 +55,10 @@ const uploadS3 = async (req, res, next) => {
     req.filenames.push(tmpFile.originalname);
     req.s3Results.push(await s3.upload(param).promise());
   }));
+
+  if (!hasResult) {
+    return res.status(400).send({ msg: 'Bad request, please provide request catecory.' });
+  }
   return next();
 };
 

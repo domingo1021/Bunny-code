@@ -9,6 +9,7 @@ class FileUploadException {
 const fileUploader = multer({
   storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
+    console.log('mimetype: ', file.mimetype);
     const fileSize = parseInt(req.headers['content-length']);
     if (file.mimetype !== 'application/javascript') {
       cb(new FileUploadException('Only javascript file is accepted'));
