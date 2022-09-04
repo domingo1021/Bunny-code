@@ -3,14 +3,22 @@ const httpServer = require('./app');
 // const { writeRecord, queryRecord } = require('./server/controllers/codeRecord');
 
 const io = new Server(httpServer, {
-  cors: {
-    origin: '*', // ['https://styagram-6edf0.web.app/', 'http://localhost:3000', 'https://localhost:3000'],
-    methods: ['GET', 'POST'],
-    // allowedHeaders: ['my-custom-header'],
-    // credentials: true,
-  },
-});
-
+	path: '/api/socket/',
+	cors:{
+		origin: '*',
+		methods: ['GET', 'POST'],
+		credentials:true,
+	}
+}
+	//, {
+   //cors: {
+//	  origin: 'https://domingoos.store', // ['https://styagram-6edf0.web.app/', 'http://localhost:3000', 'https://localhost:3000'],
+  //  methods: ['GET', 'POST'],
+    //allowedHeaders: ['my-custom-header'],
+    //credentials: true,
+  //},
+//});
+);
 // TODO: socket auth with middleware
 
 io.on('connection', async (socket) => {
