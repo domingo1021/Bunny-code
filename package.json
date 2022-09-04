@@ -20,6 +20,7 @@
   "dependencies": {
     "@influxdata/influxdb-client": "^1.29.0",
     "@influxdata/influxdb-client-apis": "^1.29.0",
+    "aws-sdk": "^2.1209.0",
     "bcrypt": "^5.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
@@ -27,8 +28,8 @@
     "eslint-plugin-prettier": "^4.2.1",
     "express": "^4.18.1",
     "express-validator": "^6.14.2",
-    "fs": "^0.0.1-security",
     "jsonwebtoken": "^8.5.1",
+    "multer": "^1.4.5-lts.1",
     "mysql2": "^2.3.3",
     "prettier": "^2.7.1",
     "socket.io": "^4.5.1"
