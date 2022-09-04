@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const { FileUploadException } = require('./server/services/service');
 
 const { SERVER_PORT, API_VERSION } = process.env;
 
@@ -24,6 +25,9 @@ app.use((req, res, next) => {
 
 // Error handling
 app.use((err, req, res, next) => {
+  if (err instanceof FileUploadException) {
+    return res.send({ msg: err.msg });
+  }
   console.log(err);
   res.status(500).send('Internal Server Error');
 });
