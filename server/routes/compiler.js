@@ -8,6 +8,9 @@ router.get('/compiler', runCompiler);
 
 router.route('/record').get(queryRecord).post(writeRecord);
 
-router.post('/record/file', jwtAuthenticate, fileUploader, uploadS3, (req, res) => res.send('hello world !'));
+router.post('/record/file', jwtAuthenticate, fileUploader, uploadS3, (req, res) => {
+  console.log('result 0:', req.result[0]);
+  res.send('hello world !');
+});
 
 module.exports = router;

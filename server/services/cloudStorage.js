@@ -27,10 +27,10 @@ const uploadS3 = async (req, res, next) => {
     let folderRoutes;
     switch (reqCategory) {
       case 'code_file':
-        folderRoutes = preparePrefix([process.env.S3_RECORD_FOLDER, user.id, projectID, versionID]);
+        folderRoutes = preparePrefix([process.env.S3_RECORD_FOLDER, `user_${user.id}`, `project_${projectID}`, `version_${versionID}`]);
         break;
       case 'user_picture':
-        folderRoutes = preparePrefix([process.env.S3_USER_IMAGE_FOLDER, user.id]);
+        folderRoutes = preparePrefix([process.env.S3_USER_IMAGE_FOLDER, `user_${user.id}`]);
         break;
       default:
         return res.status(400).send({ msg: 'Bad request, please provide request catecory.' });
