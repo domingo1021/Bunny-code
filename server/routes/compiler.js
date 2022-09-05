@@ -8,7 +8,9 @@ const uploadS3 = require('../services/cloudStorage');
 
 router.get('/compiler', runCompiler);
 
-router.route('/record').get(queryRecord).post(writeRecord);
+router.route('/record').post(writeRecord);
+
+router.route('/record/:userID').post(queryRecord);
 
 router.post('/record/file', jwtAuthenticate, fileUploader, uploadS3, writeFile);
 

@@ -67,12 +67,17 @@ const writeRecord = async (req, res) => {
 
 const queryRecord = async (req, res) => {
   // TODO: get time from MySQL DB.
-  const userID = 1;
-  const projectID = 1;
-  const startTime = '2022-09-01T04:25:32.985Z';
-  const stopTime = '2022-10-30T04:25:32.47Z';
+  const { userID } = req.params;
+  const {
+    projectID, startTime, stopTime,
+  } = req.body;
+  // const userID = 1;
+  // const projectID = 1;
+  // const startTime = '2022-09-01T04:25:32.985Z';
+  // const stopTime = '2022-10-30T04:25:32.47Z';
   // Flux query
   const queryApi = timeDB.getQueryApi(INFLUX_ORG);
+  console.log(userID, projectID, startTime, stopTime);
 
   // filter
   const query = `from(bucket: "bunny")
@@ -105,12 +110,16 @@ const queryRecord = async (req, res) => {
         responseData.push(tmpCobject);
       },
       error(error) {
+        console.log(error);
         reject('error occur');
       },
       complete() {
         resolve(responseData);
       },
     });
+  }).catch((error) => {
+    console.log(error);
+    return res.status(500).send('erorr occur');
   });
   return res.status(200).json({ data: queryResponse });
 };
