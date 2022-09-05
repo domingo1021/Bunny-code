@@ -30,18 +30,25 @@ const writeRecord = async (req, res) => {
   // console.log(data.timestamp, new Date(+data.timestamp.substring(0, 13)));
   // TODO: insert into S3 storage with file snapshot.
   // TODO: insert into mysql database with specific datetime （start & end).
-  const { userID, projectID } = req.body;
+  const {
+    userID, projectID, versionID, fileName, checkpointNumber,
+  } = req.body;
   const batchData = JSON.parse(req.body.batchData);
   console.log(batchData);
   const writeApi = timeDB.getWriteApi(INFLUX_ORG, INFLUX_BUCKET, 'ns');
   const points = batchData.map((data) => {
     if (KEY_MANAGE.includes(data.action)) {
-      return `${userID},project=${projectID},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
+      return `${userID},project=${projectID},version=${versionID},file=${fileName},checkpoint=${checkpointNumber},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
     }
-    return `${userID},project=${projectID},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
+    return `${userID},project=${projectID},version=${versionID},file=${fileName},checkoutpoint=${checkpointNumber},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
   });
 
   writeApi.writeRecords(points);
+
+  const startTime = batchData[0].timestamp;
+  const endTime = batchData[0].timestamp;
+
+  await Compiler.writeRecord(versionID, startTime, endTime);
 
   let response;
   try {
@@ -85,6 +92,9 @@ const queryRecord = async (req, res) => {
         const tmpCobject = {
           userID: responseRow._measurement,
           project: responseRow.project,
+          version: responseRow.version,
+          file: responseRow.file,
+          checkpoint: responseRow.checkpoint,
           action: responseRow.action,
           index: responseRow.index,
           line: responseRow.line,
