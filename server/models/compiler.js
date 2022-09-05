@@ -5,4 +5,9 @@ const writeFile = async (fileName, fileURL, log, versionID) => {
   await pool.execute(sql, [fileName, fileURL, log, versionID]);
 };
 
-module.exports = { writeFile };
+const writeRecord = async (versionID, startTime, endTime) => {
+  const sql = 'INSERT INTO record (version_id, start_time, end_time) VALUES (?, ?, ?);';
+  await pool.execute(sql, [versionID, startTime, endTime]);
+};
+
+module.exports = { writeFile, writeRecord };
