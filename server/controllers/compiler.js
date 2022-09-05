@@ -6,7 +6,7 @@ const pool = require('../../utils/rmdb');
 const timeDB = require('../../utils/timeSeriesDB');
 
 const { INFLUX_ORG, INFLUX_BUCKET } = process.env;
-const KEY_MANAGE = ['enter', 'up', 'down'];
+const KEY_MANAGE = ['up', 'down'];
 
 const writeFile = async (req, res) => {
   // store S3 result & related info into MySQL DB
