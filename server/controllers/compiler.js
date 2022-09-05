@@ -45,8 +45,8 @@ const writeRecord = async (req, res) => {
 
   writeApi.writeRecords(points);
 
-  const startTime = batchData[0].timestamp.substring(0, 13);
-  const endTime = batchData[0].timestamp.substring(0, 13);
+  const startTime = new Date(+batchData[0].timestamp.substring(0, 13));
+  const endTime = new Date(+batchData[batchData.length - 1].timestamp.substring(0, 13));
 
   await Compiler.writeRecord(versionID, startTime, endTime);
 
