@@ -47,11 +47,14 @@ const writeRecord = async (req, res) => {
 
   const startTime = new Date(+batchData[0].timestamp.substring(0, 13));
   const endTime = new Date(+batchData[batchData.length - 1].timestamp.substring(0, 13));
-
-  await Compiler.writeRecord(versionID, startTime, endTime);
-
+  try {
+    await Compiler.writeRecord(versionID, startTime, endTime);
+  } catch (error) {
+    console.log(error);
+  }
   let response;
   try {
+    console.log('ready to close');
     await writeApi.close();
     response = 'success';
   } catch (error) {
