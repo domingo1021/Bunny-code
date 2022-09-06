@@ -126,14 +126,10 @@ const queryRecord = async (req, res) => {
 
 const runCompiler = async (req, res) => {
   const { userID } = req.body;
-  const { codes } = req.body;
+  const { codes, fileName } = req.body;
   async function runCommand(cmd) {
     return new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
-        if (error) {
-          console.log(`error: ${error.message}`);
-          reject(error);
-        }
         if (stderr) {
           console.log(`stderr: ${stderr}`);
           reject(stderr);
@@ -145,11 +141,12 @@ const runCompiler = async (req, res) => {
       });
     });
   }
-  const userCodeRoute = `./user_tmp_codes/${userID}.js`;
+  const tmpTime = Date.now();
+  const userCodeRoute = `./user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`;
   fs.writeFileSync(userCodeRoute, codes);
   let compilerResult;
   try {
-    compilerResult = await runCommand(`docker run -v \$\(pwd\)/user_tmp_codes:/app/user_tmp_codes --rm node-tool /app/user_tmp_codes/${userID}.js`);
+    compilerResult = await runCommand(`docker run -v \$\(pwd\)/user_tmp_codes:/app/user_tmp_codes --rm node-tool /app/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`);
   } catch (error) {
     compilerResult = error;
   }
