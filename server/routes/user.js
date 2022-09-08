@@ -3,7 +3,7 @@ const { body } = require('express-validator');
 const { userSignUp, userSignIn } = require('../controllers/user');
 const { checkPassword, checkEmail, checkApplicationJSON } = require('../services/validation');
 const {
-  jwtAuthenticate, authorization, blockNotSelf, blockSelf,
+  authMiddleware, authorization, blockNotSelf, blockSelf,
 } = require('../services/auth');
 
 const router = express.Router();
@@ -34,7 +34,7 @@ router.post(
   userSignIn,
 );
 
-router.get('/user/:userID/test-auth', jwtAuthenticate, authorization, (req, res) => res.send({
+router.get('/user/:userID/test-auth', authMiddleware, authorization, (req, res) => res.send({
   id: req.user.id,
   category: req.clientCategory,
   user: req.user,

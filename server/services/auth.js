@@ -15,27 +15,38 @@ const createJWTtoken = (payload, exp) => new Promise((resolve, reject) => {
   );
 });
 
-// Promise verify
-const jwtAuthenticate = async (req, res, next) => {
-  const header = req.headers.authorization;
-  const jwtToken = header && header.split(' ')[1];
+class AuthenticationError {
+  constructor(status, msg) {
+    this.status = status;
+    this.msg = msg;
+  }
+}
+
+const jwtAuthenticate = async (token) => {
+  const jwtToken = token && token.split(' ')[1];
   if (jwtToken === 'null' || !jwtToken) {
-    return res.status(401).json({ msg: 'Please provide token' });
+    throw new AuthenticationError(401, 'Please provide token');
   }
-  try {
-    const decoded = await new Promise((resolve, reject) => {
-      jwt.verify(jwtToken, process.env.JWT_SECRET_KEY, (err, token) => {
-        if (err) {
-          return reject(err);
-        }
-        return resolve(token);
-      });
+  const decoded = await new Promise((resolve, reject) => {
+    jwt.verify(jwtToken, process.env.JWT_SECRET_KEY, (err, auth) => {
+      if (err) {
+        return reject(new AuthenticationError(403, 'Forbidden'));
+      }
+      return resolve(auth);
     });
-    req.user = decoded.payload;
-    console.log(decoded.payload);
+  });
+  return decoded.payload;
+};
+
+const authMiddleware = async (req, res, next) => {
+  const token = req.headers.authorization;
+  let user;
+  try {
+    user = await jwtAuthenticate(token);
   } catch (error) {
-    return res.status(403).send({ msg: 'Token authorization failed.' });
+    return res.status(error.status).json({ msg: error.msg });
   }
+  req.user = user;
   return next();
 };
 
@@ -106,5 +117,5 @@ const blockSelf = (req, res, next) => {
 };
 
 module.exports = {
-  createJWTtoken, jwtAuthenticate, authorization, blockNotSelf, blockSelf,
+  createJWTtoken, authMiddleware, AuthenticationError, jwtAuthenticate, authorization, blockNotSelf, blockSelf,
 };
