@@ -98,4 +98,31 @@ const userSignUp = async (req, res) => {
   });
 };
 
-module.exports = { userSignUp, userSignIn };
+const getUserProjects = (req, res) => {
+  console.log('getting...');
+  return res.status(200).json({ data: 'get user project' });
+};
+
+const createUserProject = (req, res) => {
+  console.log('creating...');
+  res.status(201).json({ data: 'Create success' });
+};
+
+const getProejctVersions = (req, res) => {
+  console.log('getting...');
+  return res.status(200).json({ data: 'get user project' });
+};
+
+const createProjectVersion = (req, res) => {
+  console.log('creating...');
+  res.status(201).json({ data: 'Create success' });
+};
+
+module.exports = {
+  userSignUp,
+  userSignIn,
+  getUserProjects,
+  createUserProject,
+  getProejctVersions,
+  createProjectVersion,
+};

@@ -1,6 +1,13 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { userSignUp, userSignIn } = require('../controllers/user');
+const {
+  userSignUp,
+  userSignIn,
+  getUserProjects,
+  createUserProject,
+  getProejctVersions,
+  createProjectVersion,
+} = require('../controllers/user');
 const { checkPassword, checkEmail, checkApplicationJSON } = require('../services/validation');
 const {
   authMiddleware, authorization, blockNotSelf, blockSelf,
@@ -34,10 +41,14 @@ router.post(
   userSignIn,
 );
 
-router.get('/user/:userID/test-auth', authMiddleware, authorization, (req, res) => res.send({
-  id: req.user.id,
-  category: req.clientCategory,
-  user: req.user,
-}));
+router.route('/user/:userID/project').get(getUserProjects).post(createUserProject);
+
+router.route('/user/:userID/project/:projectID/version').get(getProejctVersions).post(createProjectVersion);
+
+// router.get('/user/:userID/test-auth', authMiddleware, authorization, (req, res) => res.send({
+//   id: req.user.id,
+//   category: req.clientCategory,
+//   user: req.user,
+// }));
 
 module.exports = router;

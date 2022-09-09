@@ -37,6 +37,16 @@ const getUserDetail = async (email, roleId) => {
   }
 };
 
+const getUserProjects = async () => {
+  console.log('getting...');
+  return '';
+};
+
+const createUserProject = async () => {
+  console.log('creating...');
+  return '';
+};
+
 module.exports = {
-  signUp, signIn, getUserDetail,
+  signUp, signIn, getUserDetail, getUserProjects, createUserProject,
 };

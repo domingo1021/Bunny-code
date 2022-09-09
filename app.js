@@ -16,6 +16,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(`/api/${API_VERSION}`, [
   require('./server/routes/user'),
   require('./server/routes/compiler'),
+  require('./server/routes/project'),
+  require('./server/routes/marketing'),
 ]);
 
 // Page not found
