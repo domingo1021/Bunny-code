@@ -22,7 +22,9 @@ io.use(async (socket, next) => {
   try {
     userPayload = await jwtAuthenticate(jwtToken);
   } catch (error) {
-    userPayload = undefined;
+    userPayload = {
+      id: -1,
+    };
   }
   socket.user = userPayload;
   next();
@@ -31,6 +33,7 @@ io.use(async (socket, next) => {
 io.on('connection', async (socket) => {
   // authorization
   socket.on('queryBattler', async (queryObject) => {
+    socket.join(queryObject.battleID);
     const battleResponse = await queryBattler(queryObject.battleID);
     let userCategory = CLIENT_CATEGORY.visitor;
     if ([battleResponse.firstUserID, battleResponse.secondUserID].includes(socket.user.id)) {
@@ -43,8 +46,14 @@ io.on('connection', async (socket) => {
       userID: socket.user.id,
       category: userCategory,
     });
+    console.log('prepare to send room msg');
     socket.to(queryObject.battleID).emit('in', `user #${socket.user.id} come in.`);
   });
+  socket.on('newCodes', (recordObject) => {
+    socket.to(recordObject.battleID).emit('newCodes', recordObject);
+  });
+  // TODO: "on" get new records from socket, boardcast records to the room of user.
+
   socket.on('disconnect', () => {
     console.log(`#${socket.user.id} user disconnection.`);
   });
