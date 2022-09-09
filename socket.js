@@ -29,23 +29,21 @@ io.use(async (socket, next) => {
 });
 
 io.on('connection', async (socket) => {
-  console.log(`a user connected, payload: ${JSON.stringify(socket.user)}`);
   // authorization
   socket.on('queryBattler', async (queryObject) => {
-    const battlers = await queryBattler(queryObject.battleID);
+    const battleResponse = await queryBattler(queryObject.battleID);
     let userCategory = CLIENT_CATEGORY.visitor;
-    if (battlers.includes(socket.user.id)) {
+    if ([battleResponse.firstUserID, battleResponse.secondUserID].includes(socket.user.id)) {
       userCategory = CLIENT_CATEGORY.self;
     }
-    console.log({
-      battlers: [battlers[0], battlers[1]],
-      category: userCategory,
-    });
+    // assign battle room
+    socket.battleID = queryObject.battleID;
     socket.emit('returnBattler', {
-      battlers: [battlers[0], battlers[1]],
+      battleResponse,
       userID: socket.user.id,
       category: userCategory,
     });
+    socket.to(queryObject.battleID).emit('in', `user #${socket.user.id} come in.`);
   });
   socket.on('disconnect', () => {
     console.log(`#${socket.user.id} user disconnection.`);
