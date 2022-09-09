@@ -66,11 +66,9 @@ const userSignUp = async (req, res) => {
 
   const saltRounds = 5;
 
-  // 1. hash password with bcrypt.
   user.password = await bcrypt.hash(password, saltRounds);
   let userID;
   try {
-    // TODO: 記得修改 execte
     userID = await User.signUp(user);
   } catch (error) {
     if (error.sqlMessage.includes('Duplicate')) {
