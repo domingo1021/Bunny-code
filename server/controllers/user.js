@@ -72,7 +72,7 @@ const userSignUp = async (req, res) => {
     userID = await User.signUp(user);
   } catch (error) {
     if (error.sqlMessage.includes('Duplicate')) {
-      return res.json({ msg: 'User name or email already exists' });
+      return res.status(400).json({ msg: 'User name or email already exists' });
     }
   }
 
@@ -98,24 +98,31 @@ const userSignUp = async (req, res) => {
   });
 };
 
-const getUserProjects = (req, res) => {
-  console.log('getting...');
-  return res.status(200).json({ data: 'get user project' });
+const getUserProjects = async (req, res) => {
+  const { userID } = req.params;
+  const projects = await User.getUserProjects(userID);
+  return res.status(200).json({ data: projects });
 };
 
-const createUserProject = (req, res) => {
-  console.log('creating...');
-  res.status(201).json({ data: 'Create success' });
-};
-
-const getProejctVersions = (req, res) => {
-  console.log('getting...');
-  return res.status(200).json({ data: 'get user project' });
-};
-
-const createProjectVersion = (req, res) => {
-  console.log('creating...');
-  res.status(201).json({ data: 'Create success' });
+const createUserProject = async (req, res) => {
+  const { userID } = req.params;
+  const { projectName, isPublic } = req.body;
+  if (isPublic === undefined || !projectName) {
+    return res.status(400).json({ msg: 'Lack of data.' });
+  }
+  let insertResponse;
+  try {
+    insertResponse = await User.createUserProject(projectName, +isPublic, +userID);
+  } catch (error) {
+    if (error.sqlMessage.includes('Duplicate')) {
+      return res.status(400).json({ msg: 'Project name already exists' });
+    }
+  }
+  return res.status(201).json({
+    data: {
+      projectID: insertResponse,
+    },
+  });
 };
 
 module.exports = {
@@ -123,6 +130,4 @@ module.exports = {
   userSignIn,
   getUserProjects,
   createUserProject,
-  getProejctVersions,
-  createProjectVersion,
 };

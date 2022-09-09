@@ -37,14 +37,21 @@ const getUserDetail = async (email, roleId) => {
   }
 };
 
-const getUserProjects = async () => {
-  console.log('getting...');
-  return '';
+const getUserProjects = async (userID) => {
+  const sql = `SELECT project_id as projectID, project_name as projectName, 
+  watch_count as watchCount, star_count as starCount, is_public as isPublic, create_at as createAt 
+  FROM project
+  WHERE user_id = ? AND deleted = 0;`;
+  console.log(userID);
+  const [selectResponse] = await pool.execute(sql, [userID]);
+  return selectResponse;
 };
 
-const createUserProject = async () => {
-  console.log('creating...');
-  return '';
+const createUserProject = async (projectName, isPublic, userID) => {
+  const sql = 'INSERT INTO project (project_name, is_public, user_id) VALUES (?, ?, ?);';
+  console.log(projectName, isPublic, userID);
+  const [insertResponse] = await pool.execute(sql, [projectName, isPublic, userID]);
+  return insertResponse.insertId;
 };
 
 module.exports = {

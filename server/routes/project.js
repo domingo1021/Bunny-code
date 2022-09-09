@@ -3,7 +3,9 @@ const express = require('express');
 //   authMiddleware, authorization, blockNotSelf, blockSelf,
 // } = require('../services/auth');
 
-const { getProjects } = require('../controllers/project');
+const {
+  getProjects, getProejctVersions, createProjectVersion, getFiles, createFile,
+} = require('../controllers/project');
 
 const router = express.Router();
 
@@ -12,5 +14,9 @@ const router = express.Router();
 router.get('/project/:information', getProjects);
 
 router.get('/project/:projectID/version/:information');
+
+router.route('/project/:projectID/version').get(getProejctVersions).post(createProjectVersion);
+
+router.route('/file').get(getFiles).post(createFile);
 
 module.exports = router;
