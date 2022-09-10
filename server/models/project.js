@@ -1,13 +1,77 @@
 const pool = require('../../utils/rmdb');
 
-const getAllProjects = async () => {
-  console.log('getting all proejcts..');
-  return '';
+const projectDetials = async (projectID) => {
+  // TODO: get project basic data;
+  const projectSQL = `
+  SELECT project_id as projectID, project_name as projectName, project_description as projectDescription, watch_count as watchCount, star_count as starCount, create_at as createAt
+  FROM project 
+  WHERE project_id = ? AND deleted = 0;
+  `;
+  const versionSQL = `
+  SELECT version_id as versionID, version_name as versionName, version_number as versionNumber, editing
+  FROM version
+  WHERE project_id = ? AND deleted = 0;
+  `;
+  const fileSQL = `
+  SELECT file_id as fileID, file_name as fileName, file_url as fileURL, log, version_id as versionID
+  FROM file
+  WHERE version_id = ? AND deleted = 0 AND hided = 0
+  ORDER BY file_id DESC
+  `;
+  const recordSQL = `
+  SELECT record_id as recordID, start_time as startTime, end_time as endTime, version_id as versionID
+  FROM record
+  WHERE version_id = ? AND deleted = 0;
+  `;
+  const [projectResponse] = await pool.execute(projectSQL, [projectID]);
+  // TODO: get version data on projectID;
+  const [versionResponse] = await pool.execute(versionSQL, [projectID]);
+  // console.log(versionResponse);
+  const fileResponses = await Promise.all(versionResponse.map(async (version) => {
+    const [tmpFileReponse] = await pool.execute(fileSQL, [version.versionID]);
+    return tmpFileReponse;
+  }));
+  const recordResponses = await Promise.all(versionResponse.map(async (version) => {
+    const [tmpFileReponse] = await pool.execute(recordSQL, [version.versionID]);
+    return tmpFileReponse;
+  }));
+  // console.log(fileResponses);
+  // TODO: get file data on versionID;
+  // TODO: get record data on versionID;
+  return [projectResponse[0], versionResponse, fileResponses, recordResponses];
 };
-//  f.file_name as fileName, f.file_url as fileUrl, f.log
+
+const searchProjects = async (keywords, paging) => {
+  const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, u.user_name as userName
+  FROM project as p
+  LEFT JOIN user as u
+  ON p.user_id = u.user_id
+  WHERE p.is_public = 1 AND (p.project_name LIKE ? OR p.project_description LIKE ? OR u.user_name LIKE ?)
+  ORDER BY create_at DESC
+  LIMIT ? OFFSET ?
+  `;
+  const likeString = `%${keywords}%`;
+  const limitCount = paging * 6;
+  const [keywordProducts] = await pool.query(sql, [likeString, likeString, likeString, 6, limitCount]);
+  return keywordProducts;
+};
+
+const getAllProjects = async (paging) => {
+  const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, u.user_name as userName
+  FROM project as p
+  LEFT JOIN user as u
+  ON p.user_id = u.user_id 
+  WHERE is_public = 1
+  ORDER BY create_at DESC
+  LIMIT ? OFFSET ?`;
+  const limitCount = paging * 6;
+  const [allProducts] = await pool.query(sql, [6, limitCount]);
+  return allProducts;
+};
 
 const createProjectVersion = async (versionName, projectID) => {
   const connection = await pool.getConnection();
+  await connection.beginTransaction();
   const getVersionNumber = `
   SELECT  v.version_id as versionID, v.version_number as versionNumber
   FROM version as v 
@@ -27,16 +91,30 @@ const createProjectVersion = async (versionName, projectID) => {
   } else {
     versionNumber = selectResponse[0].versionNumber + 1;
   }
-  const [createResponse] = await connection.execute(createVersionSQL, [versionName, versionNumber, projectID]);
+  let createResponse;
+  try {
+    const [createVersion] = await connection.execute(createVersionSQL, [versionName, versionNumber, projectID]);
+    createResponse = createVersion;
+  } catch (error) {
+    console.log('create version error: ', error);
+    await connection.rollback();
+    return -1;
+  }
   if (selectResponse.length !== 0) {
     const [fileResponse] = await connection.execute(latestFile, [selectResponse[0].versionID]);
-    console.log(fileResponse);
     if (fileResponse.length !== 0) {
-      await connection.execute(defaultFile, [fileResponse[0].fileName, fileResponse[0].fileUrl, fileResponse[0].log, createResponse.insertId]);
+      try {
+        await connection.execute(defaultFile, [fileResponse[0].fileName, fileResponse[0].fileUrl, fileResponse[0].log, createResponse.insertId]);
+      } catch (error) {
+        console.log('cloning file error: ', error);
+        await connection.rollback();
+        return -1;
+      }
     }
   }
+  await connection.commit();
   connection.release();
-  return versionNumber;
+  return createResponse.insertId;
 };
 
 const getProejctVeriosn = () => {
@@ -47,7 +125,9 @@ const getProejctVeriosn = () => {
 };
 
 module.exports = {
+  searchProjects,
   getAllProjects,
   createProjectVersion,
   getProejctVeriosn,
+  projectDetials,
 };

@@ -4,7 +4,7 @@ const express = require('express');
 // } = require('../services/auth');
 
 const {
-  getProjects, getProejctVersions, createProjectVersion, getFiles, createFile,
+  getProjects, getProejctVersions, createProjectVersion,
 } = require('../controllers/project');
 
 const router = express.Router();
