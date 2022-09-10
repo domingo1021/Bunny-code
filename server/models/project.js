@@ -3,9 +3,10 @@ const pool = require('../../utils/rmdb');
 const projectDetials = async (projectID) => {
   // TODO: get project basic data;
   const projectSQL = `
-  SELECT project_id as projectID, project_name as projectName, project_description as projectDescription, watch_count as watchCount, star_count as starCount, create_at as createAt
-  FROM project 
-  WHERE project_id = ? AND deleted = 0;
+  SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt,
+  u.user_id as userID, u.user_name as userName
+  FROM project as p, user as u
+  WHERE project_id = ? AND deleted = 0 AND u.user_id = p.user_id;
   `;
   const versionSQL = `
   SELECT version_id as versionID, version_name as versionName, version_number as versionNumber, editing
