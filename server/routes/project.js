@@ -17,6 +17,4 @@ router.get('/project/:projectID/version/:information');
 
 router.route('/project/:projectID/version').get(getProejctVersions).post(createProjectVersion);
 
-router.route('/file').get(getFiles).post(createFile);
-
 module.exports = router;

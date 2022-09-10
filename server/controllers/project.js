@@ -26,20 +26,8 @@ const createProjectVersion = async (req, res) => {
   return res.status(201).json({ data: { versionNumber } });
 };
 
-const getFiles = async (req, res) => {
-  const { versionID } = req.body;
-  return res.status(200).json({ msg: 123 });
-};
-
-const createFile = async (req, res) => {
-  const { versionID } = req.body;
-  return res.status(201).json({ msg: 123 });
-};
-
 module.exports = {
   getProjects,
   getProejctVersions,
   createProjectVersion,
-  getFiles,
-  createFile,
 };

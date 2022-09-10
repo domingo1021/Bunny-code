@@ -10,4 +10,12 @@ const writeRecord = async (versionID, startTime, endTime) => {
   await pool.execute(sql, [versionID, startTime, endTime]);
 };
 
-module.exports = { writeFile, writeRecord };
+const getFiles = async (versionID) => {
+  const sql = `
+  SELECT file_name as fileName, file_url as fileUrl, log FROM file WHERE version_id = ?;
+  `;
+  const [files] = await pool.execute(sql, [versionID]);
+  return files;
+};
+
+module.exports = { writeFile, writeRecord, getFiles };
