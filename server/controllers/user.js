@@ -72,7 +72,7 @@ const userSignUp = async (req, res) => {
     userID = await User.signUp(user);
   } catch (error) {
     if (error.sqlMessage.includes('Duplicate')) {
-      return res.json({ msg: 'User name or email already exists' });
+      return res.status(400).json({ msg: 'User name or email already exists' });
     }
   }
 
@@ -98,4 +98,39 @@ const userSignUp = async (req, res) => {
   });
 };
 
-module.exports = { userSignUp, userSignIn };
+const getUserProjects = async (req, res) => {
+  const { userID } = req.params;
+  const projects = await User.getUserProjects(userID);
+  return res.status(200).json({ data: projects });
+};
+
+const createUserProject = async (req, res) => {
+  const { userID } = req.params;
+  const { projectName, projectDescription, isPublic } = req.body;
+  if (isPublic === undefined || !projectName || !projectDescription) {
+    return res.status(400).json({ msg: 'Lack of data.' });
+  }
+  if (projectName.length >= 30 || projectDescription.length >= 50) {
+    return res.status(400).json({ msg: 'project name or description is too long.' });
+  }
+  let insertResponse;
+  try {
+    insertResponse = await User.createUserProject(projectName, projectDescription, +isPublic, +userID);
+  } catch (error) {
+    if (error.sqlMessage.includes('Duplicate')) {
+      return res.status(400).json({ msg: 'Project name already exists' });
+    }
+  }
+  return res.status(201).json({
+    data: {
+      projectID: insertResponse,
+    },
+  });
+};
+
+module.exports = {
+  userSignUp,
+  userSignIn,
+  getUserProjects,
+  createUserProject,
+};

@@ -29,6 +29,8 @@ io.use(async (socket, next) => {
   socket.user = userPayload;
   next();
 });
+// TODO: 當 connection 時，需辨認進入的 socket 種類，Editor 的部分也需要使用到 socket (表示使用者正在編輯);
+// TODO: 如果是本人進入頁面（認為想要 edit）, 則建立 Socket, 並更動 edit 狀態，
 
 io.on('connection', async (socket) => {
   // authorization

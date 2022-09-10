@@ -13,6 +13,7 @@ const queryBattler = async (battleID) => {
   `;
   const [firstUser] = await connection.execute(sqlFirst, battleID);
   const [secondUser] = await connection.execute(sqlSecond, battleID);
+  // TODO: Fix: fix if there is no battle;
   const responseObject = {
     battleID,
     battleName: firstUser[0].battle_name,

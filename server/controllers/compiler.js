@@ -8,6 +8,14 @@ const timeDB = require('../../utils/timeSeriesDB');
 const { INFLUX_ORG, INFLUX_BUCKET } = process.env;
 const KEY_MANAGE = ['up', 'down'];
 
+const getFiles = async (req, res) => {
+  const { versionID } = req.body;
+  const files = await Compiler.getFiles(versionID);
+  return res.status(200).json({
+    data: files,
+  });
+};
+
 const writeFile = async (req, res) => {
   // store S3 result & related info into MySQL DB
   const { versionID } = req.body;
@@ -155,5 +163,5 @@ const runCompiler = async (req, res) => {
 };
 
 module.exports = {
-  runCompiler, writeFile, writeRecord, queryRecord,
+  runCompiler, getFiles, writeFile, writeRecord, queryRecord,
 };

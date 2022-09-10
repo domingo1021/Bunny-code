@@ -1,8 +1,13 @@
 const pool = require('../../utils/rmdb');
 
 const writeFile = async (fileName, fileURL, log, versionID) => {
-  const sql = 'INSERT INTO file (file_name, file_url, log, version_id) VALUES(?, ?, ?, ?)';
-  await pool.execute(sql, [fileName, fileURL, log, versionID]);
+  const connection = await pool.getConnection();
+  const updateFileStatus = `
+    UPDATE file SET hided = 1 WHERE version_id = ? AND file_name = ?
+  `;
+  const insertSQL = 'INSERT INTO file (file_name, file_url, log, version_id) VALUES(?, ?, ?, ?)';
+  await connection.execute(updateFileStatus, [versionID, fileName]);
+  await connection.execute(insertSQL, [fileName, fileURL, log, versionID]);
 };
 
 const writeRecord = async (versionID, startTime, endTime) => {
@@ -10,4 +15,12 @@ const writeRecord = async (versionID, startTime, endTime) => {
   await pool.execute(sql, [versionID, startTime, endTime]);
 };
 
-module.exports = { writeFile, writeRecord };
+const getFiles = async (versionID) => {
+  const sql = `
+  SELECT file_name as fileName, file_url as fileUrl, log FROM file WHERE version_id = ?;
+  `;
+  const [files] = await pool.execute(sql, [versionID]);
+  return files;
+};
+
+module.exports = { writeFile, writeRecord, getFiles };

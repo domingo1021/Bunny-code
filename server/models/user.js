@@ -37,6 +37,22 @@ const getUserDetail = async (email, roleId) => {
   }
 };
 
+const getUserProjects = async (userID) => {
+  const sql = `SELECT project_id as projectID, project_name as projectName, project_description as projectDescription,
+  watch_count as watchCount, star_count as starCount, is_public as isPublic, create_at as createAt 
+  FROM project
+  WHERE user_id = ? AND deleted = 0;`;
+  console.log(userID);
+  const [selectResponse] = await pool.execute(sql, [userID]);
+  return selectResponse;
+};
+
+const createUserProject = async (projectName, projectDescription, isPublic, userID) => {
+  const sql = 'INSERT INTO project (project_name, project_description, is_public, user_id) VALUES (?, ?, ?, ?);';
+  const [insertResponse] = await pool.execute(sql, [projectName, projectDescription, isPublic, userID]);
+  return insertResponse.insertId;
+};
+
 module.exports = {
-  signUp, signIn, getUserDetail,
+  signUp, signIn, getUserDetail, getUserProjects, createUserProject,
 };

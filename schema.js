@@ -32,6 +32,7 @@ const projectTable = `
   CREATE TABLE IF NOT EXISTS project(
     project_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     project_name VARCHAR(30) NOT NULL,
+    project_description VARCHAR(50) DEFAULT "",
     watch_count INT UNSIGNED NOT NULL DEFAULT 0,
     star_count INT UNSIGNED NOT NULL DEFAULT 0,
     is_public TINYINT(1) NOT NULL,
@@ -65,6 +66,7 @@ const fileTable = `
     file_url VARCHAR(100) NOT NULL,
     log CHAR(13) NOT NULL,
     version_id INT UNSIGNED NOT NULL,
+    hided TINYINT(1) NOT NULL DEFAULT ,
     deleted TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (version_id) REFERENCES version(version_id),
     PRIMARY KEY (file_id)
