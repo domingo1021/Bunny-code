@@ -1,12 +1,12 @@
 const pool = require('../../utils/rmdb');
 
-const projectDetials = async (projectID) => {
+const projectDetials = async (projectName) => {
   // TODO: get project basic data;
   const projectSQL = `
   SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt,
   u.user_id as userID, u.user_name as userName
   FROM project as p, user as u
-  WHERE project_id = ? AND deleted = 0 AND u.user_id = p.user_id;
+  WHERE project_Name = ? AND deleted = 0 AND u.user_id = p.user_id;
   `;
   const versionSQL = `
   SELECT version_id as versionID, version_name as versionName, version_number as versionNumber, editing
@@ -24,9 +24,12 @@ const projectDetials = async (projectID) => {
   FROM record
   WHERE version_id = ? AND deleted = 0;
   `;
-  const [projectResponse] = await pool.execute(projectSQL, [projectID]);
+  const [projectResponse] = await pool.execute(projectSQL, [projectName]);
+  if (projectResponse.length === 0) {
+    return -1;
+  }
   // TODO: get version data on projectID;
-  const [versionResponse] = await pool.execute(versionSQL, [projectID]);
+  const [versionResponse] = await pool.execute(versionSQL, [projectResponse[0].projectID]);
   // console.log(versionResponse);
   const fileResponses = await Promise.all(versionResponse.map(async (version) => {
     const [tmpFileReponse] = await pool.execute(fileSQL, [version.versionID]);
