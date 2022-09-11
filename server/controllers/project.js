@@ -1,13 +1,18 @@
 const Project = require('../models/project');
+const Exception = require('../services/execption');
 
 const searchProjects = async (keywords, paging) => {
   const responseObject = await Project.searchProjects(keywords, paging);
   return responseObject;
 };
 
-const projectDetails = async (projectID) => {
-  const [projectData, versionData, fileData, recordData] = await Project.projectDetials(projectID);
-  versionData.map((version) => {
+const projectDetails = async (projectName) => {
+  const detailResults = await Project.projectDetials(projectName);
+  if (detailResults === -1) {
+    throw new Exception('Bad request', 400);
+  }
+  const [projectData, versionData, fileData, recordData] = detailResults;
+  const versionCompisition = versionData.map((version) => {
     if (!version.files) {
       version.files = [];
     }
@@ -32,8 +37,9 @@ const projectDetails = async (projectID) => {
   });
   const responseObject = {
     ...projectData,
-    version: [...versionData],
+    version: [...versionCompisition],
   };
+  console.log(responseObject);
   return responseObject;
 };
 
@@ -44,7 +50,7 @@ const getAllProjects = async (paging) => {
 
 const getProjects = async (req, res) => {
   const { information } = req.params;
-  const { id, keywords } = req.query;
+  const { projectName, keywords } = req.query;
   const paging = req.query.paging || 0;
   let responseObject;
   switch (information) {
@@ -56,10 +62,14 @@ const getProjects = async (req, res) => {
       }
       break;
     case 'detail':
-      if (!id) {
-        return res.stauts(400).json({ msg: 'Bad request, please provide proejct id.' });
+      if (!projectName) {
+        return res.status(400).json({ msg: 'Bad request, please provide proejct id.' });
       }
-      responseObject = await projectDetails(+id);
+      try {
+        responseObject = await projectDetails(projectName);
+      } catch (error) {
+        return res.status(error.status).json({ msg: error.msg });
+      }
       break;
     default:
       // all
