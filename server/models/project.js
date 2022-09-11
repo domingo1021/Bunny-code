@@ -74,6 +74,7 @@ const getAllProjects = async (paging) => {
 };
 
 const createProjectVersion = async (versionName, projectID) => {
+  // TODO: check whether version name exists.
   const connection = await pool.getConnection();
   await connection.beginTransaction();
   const getVersionNumber = `
