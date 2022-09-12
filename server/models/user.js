@@ -1,4 +1,7 @@
+require('dotenv').config();
 const pool = require('../../utils/rmdb');
+
+const { DEFAULT_TEMPLATE_FILE } = process.env;
 
 const signIn = async (userObject) => {
   const sql = 'SELECT * FROM user WHERE email = ?';
@@ -60,7 +63,7 @@ const createUserProject = async (projectName, projectDescription, isPublic, user
     const [versionResponse] = await connection.execute(versionSQL, [versionName, 1, projectResponse.insertId]);
     const fileSQL = 'INSERT INTO file (file_name, file_url, log, version_id) VALUES (?, ?, ?, ?)';
     // use file with default setting (in s3);
-    await connection.execute(fileSQL, [fileName, 'www.google.com', `${Date.now()}`, versionResponse.insertId]);
+    await connection.execute(fileSQL, [fileName, DEFAULT_TEMPLATE_FILE, `${Date.now()}`, versionResponse.insertId]);
   } catch (error) {
     console.log(error);
     await connection.rollback();
