@@ -7,6 +7,7 @@ const searchProjects = async (keywords, paging) => {
 };
 
 const projectDetails = async (projectName) => {
+  console.log(projectName);
   const detailResults = await Project.projectDetials(projectName);
   // console.log(detailResults);
   if (detailResults === -1) {
