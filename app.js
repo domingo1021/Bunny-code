@@ -18,6 +18,7 @@ app.use(`/api/${API_VERSION}`, [
   require('./server/routes/compiler'),
   require('./server/routes/project'),
   require('./server/routes/marketing'),
+  require('./server/routes/battle'),
 ]);
 
 // Page not found

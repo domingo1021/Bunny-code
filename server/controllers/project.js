@@ -39,7 +39,6 @@ const projectDetails = async (projectName) => {
     ...projectData,
     version: [...versionCompisition],
   };
-  console.log(responseObject);
   return responseObject;
 };
 

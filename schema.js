@@ -66,7 +66,7 @@ const fileTable = `
     file_url VARCHAR(100) NOT NULL,
     log CHAR(13) NOT NULL,
     version_id INT UNSIGNED NOT NULL,
-    hided TINYINT(1) NOT NULL DEFAULT ,
+    hided TINYINT(1) NOT NULL DEFAULT 0,
     deleted TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (version_id) REFERENCES version(version_id),
     PRIMARY KEY (file_id)
@@ -76,6 +76,7 @@ const fileTable = `
 const recordTable = `
   CREATE TABLE IF NOT EXISTS record(
     record_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    checkpount INT UNSIGNED NOT NULL,
     start_time datetime NOT NULL,
     end_time datetime NOT NULL,
     version_id INT UNSIGNED NOT NULL,

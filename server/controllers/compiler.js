@@ -56,6 +56,7 @@ const writeRecord = async (req, res) => {
   const startTime = new Date(+batchData[0].timestamp.substring(0, 13));
   const endTime = new Date(+batchData[batchData.length - 1].timestamp.substring(0, 13));
 
+  // TODO: add check point column
   await Compiler.writeRecord(versionID, startTime, endTime);
 
   let response;

@@ -3,6 +3,7 @@ const httpServer = require('./app');
 const { jwtAuthenticate, AuthenticationError } = require('./server/services/auth');
 const { authorization, CLIENT_CATEGORY } = require('./socket/util');
 const { queryBattler } = require('./socket/battle');
+const { versionEditStatus, editVersion, unEditing } = require('./socket/editor');
 // const { writeRecord, queryRecord } = require('./server/controllers/codeRecord');
 
 const io = new Server(httpServer, {
@@ -22,6 +23,7 @@ io.use(async (socket, next) => {
   try {
     userPayload = await jwtAuthenticate(jwtToken);
   } catch (error) {
+    console.log('error: ', error);
     userPayload = {
       id: -1,
     };
@@ -33,7 +35,41 @@ io.use(async (socket, next) => {
 // TODO: 如果是本人進入頁面（認為想要 edit）, 則建立 Socket, 並更動 edit 狀態，
 
 io.on('connection', async (socket) => {
-  // authorization
+  // for workspace
+  socket.on('checkProjectStatus', async (projectObject) => {
+    console.log(`user #${socket.user.id} connecting...`);
+    socket.category = 'workspace';
+    console.log(socket.category);
+    let responseObject = {
+      readOnly: true,
+      authorization: false,
+    };
+    if (socket.user.id === -1 || !projectObject.versionID || !projectObject.projectID) {
+      socket.emit('statusChecked', responseObject);
+      return;
+    }
+    responseObject = await versionEditStatus(socket.user.id, projectObject.projectID, projectObject.versionID);
+    if (!responseObject.readOnly) {
+      socket.versionID = projectObject.versionID;
+    }
+    socket.emit('statusChecked', responseObject);
+  });
+
+  // TODO: have to disconnect user who has been editing the version;
+  socket.on('changeEdit', async (projectObject) => {
+    let responseObject = {
+      readOnly: true,
+      authorization: false,
+    };
+    if (socket.user.id === -1 || !projectObject.versionID || !projectObject.projectID) {
+      socket.emit('statusChecked', responseObject);
+      return;
+    }
+    responseObject = await editVersion(socket.user.id, projectObject.projectID, projectObject.versionID);
+    socket.emit('statusChecked', responseObject);
+  });
+
+  // for battle
   socket.on('queryBattler', async (queryObject) => {
     socket.join(queryObject.battleID);
     const battleResponse = await queryBattler(queryObject.battleID);
@@ -56,9 +92,14 @@ io.on('connection', async (socket) => {
   });
   // TODO: "on" get new records from socket, boardcast records to the room of user.
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
+    if (socket.category === 'workspace' && socket.versionID !== undefined) {
+      await unEditing(socket.versionID);
+    }
+    // check if user in battle room, otherwise, update user project status to unediting.
     console.log(`#${socket.user.id} user disconnection.`);
   });
+
   socket.on('error', () => {
     socket.disconnect();
   });

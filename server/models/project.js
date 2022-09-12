@@ -74,6 +74,7 @@ const getAllProjects = async (paging) => {
 };
 
 const createProjectVersion = async (versionName, projectID) => {
+  // TODO: check whether version name exists.
   const connection = await pool.getConnection();
   await connection.beginTransaction();
   const getVersionNumber = `
@@ -119,6 +120,15 @@ const createProjectVersion = async (versionName, projectID) => {
   await connection.commit();
   connection.release();
   return createResponse.insertId;
+};
+
+const updateVersionName = () => {
+
+};
+
+const updateFileName = () => {
+  // TODO: S3 的檔案怎麼處理？ --> 只新增嗎？ 還是刪除？
+
 };
 
 const getProejctVeriosn = () => {
