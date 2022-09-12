@@ -122,6 +122,15 @@ const createProjectVersion = async (versionName, projectID) => {
   return createResponse.insertId;
 };
 
+const updateVersionName = () => {
+
+};
+
+const updateFileName = () => {
+  // TODO: S3 的檔案怎麼處理？ --> 只新增嗎？ 還是刪除？
+
+};
+
 const getProejctVeriosn = () => {
   const sql = `
   SELECT 
