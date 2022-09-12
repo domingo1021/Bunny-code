@@ -56,18 +56,18 @@ io.on('connection', async (socket) => {
   });
 
   // TODO: have to disconnect user who has been editing the version;
-  // socket.on('changeEdit', async (projectObject) => {
-  //   let responseObject = {
-  //     readOnly: true,
-  //     authorization: false,
-  //   };
-  //   if (socket.user.id === -1 || !projectObject.versionID || !projectObject.projectID) {
-  //     socket.emit('statusChecked', responseObject);
-  //     return;
-  //   }
-  //   responseObject = await editVersion(socket.user.id, projectObject.projectID, projectObject.versionID);
-  //   socket.emit('statusChecked', responseObject);
-  // });
+  socket.on('changeEdit', async (projectObject) => {
+    let responseObject = {
+      readOnly: true,
+      authorization: false,
+    };
+    if (socket.user.id === -1 || !projectObject.versionID || !projectObject.projectID) {
+      socket.emit('statusChecked', responseObject);
+      return;
+    }
+    responseObject = await editVersion(socket.user.id, projectObject.projectID, projectObject.versionID);
+    socket.emit('statusChecked', responseObject);
+  });
 
   // for battle
   socket.on('queryBattler', async (queryObject) => {
