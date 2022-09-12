@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const validator = require('express-validator');
-const { createJWTtoken } = require('../services/auth');
+const { createJWTtoken, jwtAuthenticate } = require('../services/auth');
 const User = require('../models/user');
 
 const userSignIn = async (req, res) => {
@@ -100,7 +100,25 @@ const userSignUp = async (req, res) => {
 
 const getUserProjects = async (req, res) => {
   const { userID } = req.params;
-  const projects = await User.getUserProjects(userID);
+  const token = req.headers.authorization;
+  let userPayload;
+  try {
+    userPayload = await jwtAuthenticate(token);
+  } catch (error) {
+    userPayload = { id: -1 };
+  }
+  console.log(userPayload);
+  let projects;
+  try {
+    if (userID === userPayload.id) {
+      projects = await User.getUserProjects(userID, 'all');
+    } else {
+      projects = await User.getUserProjects(userID, 'public');
+    }
+  } catch (error) {
+    console.log(error);
+    return res.stauts(400).json({ msg: 'well' });
+  }
   return res.status(200).json({ data: projects });
 };
 
@@ -123,9 +141,16 @@ const createUserProject = async (req, res) => {
   });
 };
 
+const authResponse = (req, res) => res.status(200).json({
+  data: {
+    clientCategory: req.clientCategory,
+  },
+});
+
 module.exports = {
   userSignUp,
   userSignIn,
   getUserProjects,
   createUserProject,
+  authResponse,
 };

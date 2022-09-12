@@ -61,6 +61,7 @@ const searchProjects = async (keywords, paging) => {
 };
 
 const getAllProjects = async (paging) => {
+  const connection = await pool.getConnection();
   const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, u.user_name as userName
   FROM project as p
   LEFT JOIN user as u
@@ -68,9 +69,12 @@ const getAllProjects = async (paging) => {
   WHERE is_public = 1
   ORDER BY create_at DESC
   LIMIT ? OFFSET ?`;
+  const countSQL = 'SELECT count(project_id) as count from project WHERE is_public = 1;';
   const limitCount = paging * 6;
-  const [allProducts] = await pool.query(sql, [6, limitCount]);
-  return allProducts;
+  const [allProject] = await connection.query(sql, [6, limitCount]);
+  const [projectCounts] = await connection.execute(countSQL);
+  const allPage = Math.floor(projectCounts[0].count / 6) + 1;
+  return { projects: allProject, page: paging + 1, allPage };
 };
 
 const createProjectVersion = async (versionName, projectID) => {
