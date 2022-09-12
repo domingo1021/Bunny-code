@@ -1,4 +1,6 @@
 const multer = require('multer');
+const { exec } = require('child_process');
+const fs = require('fs');
 
 class FileUploadException {
   constructor(msg) {
@@ -27,4 +29,35 @@ function wrapAsync(fn) {
   };
 }
 
-module.exports = { wrapAsync, fileUploader, FileUploadException };
+async function runCommand(cmd) {
+  return new Promise((resolve, reject) => {
+    exec(cmd, (error, stdout, stderr) => {
+      if (stderr) {
+        console.log(`stderr: ${stderr}`);
+        reject(stderr);
+      }
+      if (stdout) {
+        console.log(`stdout: ${stdout}`);
+        resolve(stdout);
+      }
+    });
+  });
+}
+
+async function compile(userID, fileName, codes) {
+  const tmpTime = Date.now();
+  const userCodeRoute = `./user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`;
+  fs.writeFileSync(userCodeRoute, codes);
+  let compilerResult;
+  try {
+    compilerResult = await runCommand(`docker run -v \$\(pwd\)/user_tmp_codes:/app/user_tmp_codes --rm node-tool /app/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`);
+  } catch (error) {
+    compilerResult = error;
+  }
+  fs.rmSync(userCodeRoute);
+  return compilerResult;
+}
+
+module.exports = {
+  wrapAsync, fileUploader, FileUploadException, runCommand, compile,
+};

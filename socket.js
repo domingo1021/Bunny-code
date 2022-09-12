@@ -4,6 +4,7 @@ const { jwtAuthenticate, AuthenticationError } = require('./server/services/auth
 const { authorization, CLIENT_CATEGORY } = require('./socket/util');
 const { queryBattler } = require('./socket/battle');
 const { versionEditStatus, editVersion, unEditing } = require('./socket/editor');
+const { compile } = require('./server/services/service');
 // const { writeRecord, queryRecord } = require('./server/controllers/codeRecord');
 
 const io = new Server(httpServer, {
@@ -39,7 +40,6 @@ io.on('connection', async (socket) => {
   socket.on('checkProjectStatus', async (projectObject) => {
     console.log(`user #${socket.user.id} connecting...`);
     socket.category = 'workspace';
-    console.log(socket.category);
     let responseObject = {
       readOnly: true,
       authorization: false,
@@ -52,6 +52,7 @@ io.on('connection', async (socket) => {
     if (!responseObject.readOnly) {
       socket.versionID = projectObject.versionID;
     }
+    console.log(responseObject);
     socket.emit('statusChecked', responseObject);
   });
 
@@ -71,6 +72,7 @@ io.on('connection', async (socket) => {
 
   // for battle
   socket.on('queryBattler', async (queryObject) => {
+    console.log(`user in, with queryObject: ${JSON.stringify(queryObject)}`);
     socket.join(queryObject.battleID);
     const battleResponse = await queryBattler(queryObject.battleID);
     let userCategory = CLIENT_CATEGORY.visitor;
@@ -87,10 +89,23 @@ io.on('connection', async (socket) => {
     console.log('prepare to send room msg');
     socket.to(queryObject.battleID).emit('in', `user #${socket.user.id} come in.`);
   });
+
   socket.on('newCodes', (recordObject) => {
     socket.to(recordObject.battleID).emit('newCodes', recordObject);
   });
   // TODO: "on" get new records from socket, boardcast records to the room of user.
+
+  socket.on('compile', async (queryObject) => {
+    console.log(queryObject.battlerNumber, queryObject.battleID, queryObject.codes);
+    const compilerResult = await compile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes);
+    socket.to(socket.battleID).emit(
+      'complieDone',
+      {
+        battlerNumber: queryObject.battlerNumber,
+        compilerResult,
+      },
+    );
+  });
 
   socket.on('disconnect', async () => {
     if (socket.category === 'workspace' && socket.versionID !== undefined) {
