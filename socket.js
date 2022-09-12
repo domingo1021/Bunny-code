@@ -99,12 +99,16 @@ io.on('connection', async (socket) => {
     console.log(queryObject.battlerNumber, queryObject.battleID, queryObject.codes);
     const compilerResult = await compile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes);
     socket.to(socket.battleID).emit(
-      'complieDone',
+      'compileDone',
       {
         battlerNumber: queryObject.battlerNumber,
         compilerResult,
       },
     );
+    socket.emit('compileDone', {
+      battlerNumber: queryObject.battlerNumber,
+      compilerResult,
+    });
   });
 
   socket.on('disconnect', async () => {
