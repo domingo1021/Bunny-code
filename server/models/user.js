@@ -47,10 +47,32 @@ const getUserProjects = async (userID) => {
   return selectResponse;
 };
 
-const createUserProject = async (projectName, projectDescription, isPublic, userID) => {
-  const sql = 'INSERT INTO project (project_name, project_description, is_public, user_id) VALUES (?, ?, ?, ?);';
-  const [insertResponse] = await pool.execute(sql, [projectName, projectDescription, isPublic, userID]);
-  return insertResponse.insertId;
+const createUserProject = async (projectName, projectDescription, isPublic, userID, versionName, fileName) => {
+  // TODO: 預設 version, file (fileURL 使用 S3 空的 js file (default) );
+  const connection = await pool.getConnection();
+  await connection.beginTransaction();
+  try {
+    const projectSQL = 'INSERT INTO project (project_name, project_description, is_public, user_id) VALUES (?, ?, ?, ?);';
+    const [projectResponse] = await connection.execute(projectSQL, [projectName, projectDescription, isPublic, userID]);
+    console.log('projectID = ', projectResponse.insertId);
+    // TODO: create a main version where projectID is the lateset inserted projectID;
+    const versionSQL = 'INSERT INTO version (version_name, version_number, project_id) VALUES (?, ?, ?)';
+    const [versionResponse] = await connection.execute(versionSQL, [versionName, 1, projectResponse.insertId]);
+    const fileSQL = 'INSERT INTO file (file_name, file_url, log, version_id) VALUES (?, ?, ?, ?)';
+    // use file with default setting (in s3);
+    await connection.execute(fileSQL, [fileName, 'www.google.com', `${Date.now()}`, versionResponse.insertId]);
+  } catch (error) {
+    console.log(error);
+    await connection.rollback();
+    connection.release();
+    if (error.sqlMessage.includes('Duplicate')) {
+      return { msg: 'Project name already exists' };
+    }
+    return { msg: 'Proejct create failed' };
+  }
+  await connection.commit();
+  connection.release();
+  return { msg: 'Project created.' };
 };
 
 module.exports = {
