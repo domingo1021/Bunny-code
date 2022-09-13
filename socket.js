@@ -2,7 +2,7 @@ const { Server } = require('socket.io');
 const httpServer = require('./app');
 const { jwtAuthenticate, AuthenticationError } = require('./server/services/auth');
 const { authorization, CLIENT_CATEGORY } = require('./socket/util');
-const { queryBattler } = require('./socket/battle');
+const { queryBattler, getInvitations } = require('./socket/battle');
 const { versionEditStatus, editVersion, unEditing } = require('./socket/editor');
 const { compile } = require('./server/services/service');
 // const { writeRecord, queryRecord } = require('./server/controllers/codeRecord');
@@ -93,7 +93,13 @@ io.on('connection', async (socket) => {
   socket.on('newCodes', (recordObject) => {
     socket.to(recordObject.battleID).emit('newCodes', recordObject);
   });
-  // TODO: "on" get new records from socket, boardcast records to the room of user.
+
+  socket.on('getInvitations', async () => {
+    if (socket.user.id !== -1) {
+      const invitations = await getInvitations(socket.user.id);
+      socket.emit('returnInvitations', invitations);
+    }
+  });
 
   socket.on('compile', async (queryObject) => {
     console.log(queryObject.battlerNumber, queryObject.battleID, queryObject.codes);

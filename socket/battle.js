@@ -26,4 +26,33 @@ const queryBattler = async (battleID) => {
   return responseObject;
 };
 
-module.exports = { queryBattler };
+const createBattle = async (battleName, firstUserID, secondUserID, isPublic, competeTime) => {
+  const battleSQL = `
+  INSERT INTO battle (battle_name, first_user_id, second_user_id, is_public, compete_at) 
+  VALUES (?, ?, ?, ?, ?)`;
+  const [createResult] = await pool.execute(battleSQL, [battleName, firstUserID, secondUserID, isPublic, competeTime]);
+  return { battleID: createResult.insertId };
+};
+
+const getInvitations = async (userID) => {
+  const invitationSQL = `
+  SELECT b.battle_id as battleID, b.battle_name as battleName, b.first_user_id as first_user_id, b.create_at as createAt, u.user_name as userName 
+  FROM battle as b, user as u 
+  WHERE compete_at < ? AND second_user_id = ? AND is_consensus = 0 AND b.first_user_id = u.user_id;
+  `;
+  const date = new Date();
+  date.setDate(date.getDate() + 7);
+  const [invitationResponse] = await pool.execute(invitationSQL, [date, userID]);
+  console.log('invitation response: ', invitationResponse);
+  return invitationResponse;
+};
+
+const acceptInvitation = async (battleID, userID) => {
+  const acceptSQL = 'UPDATE battle SET is_consensus = 1 WHERE battle_id = ? AND second_user_id = ?';
+  const [updateResponse] = await pool.execute(acceptSQL, [battleID, userID]);
+  return updateResponse;
+};
+
+module.exports = {
+  queryBattler, createBattle, getInvitations, acceptInvitation,
+};
