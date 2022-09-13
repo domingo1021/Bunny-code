@@ -6,10 +6,11 @@ const {
   getUserProjects,
   createUserProject,
   authResponse,
+  userIDResponse,
 } = require('../controllers/user');
 const { checkPassword, checkEmail, checkApplicationJSON } = require('../services/validation');
 const {
-  authMiddleware, authorization, blockNotSelf, blockSelf,
+  authMiddleware, authorization, blockNotSelf, blockSelf, CLIENT_CATEGORY,
 } = require('../services/auth');
 
 const router = express.Router();
@@ -40,10 +41,11 @@ router.post(
   userSignIn,
 );
 
-router.route('/user/:userID/project').get(getUserProjects).post(createUserProject);
+router.route('/user/:userID/project').get(getUserProjects).post(authMiddleware, authorization, blockNotSelf([CLIENT_CATEGORY.visitor, CLIENT_CATEGORY.otherMember]), createUserProject);
 
 router.route('/user/:userID/auth').get(authMiddleware, authorization, authResponse);
 
+router.route('/user/auth').get(authMiddleware, userIDResponse);
 // router.get('/user/:userID/test-auth', authMiddleware, authorization, (req, res) => res.send({
 //   id: req.user.id,
 //   category: req.clientCategory,

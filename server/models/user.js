@@ -62,9 +62,11 @@ const createUserProject = async (projectName, projectDescription, isPublic, user
   // TODO: 預設 version, file (fileURL 使用 S3 空的 js file (default) );
   const connection = await pool.getConnection();
   await connection.beginTransaction();
+  let projectID;
   try {
     const projectSQL = 'INSERT INTO project (project_name, project_description, is_public, user_id) VALUES (?, ?, ?, ?);';
     const [projectResponse] = await connection.execute(projectSQL, [projectName, projectDescription, isPublic, userID]);
+    projectID = projectResponse.insertId;
     console.log('projectID = ', projectResponse.insertId);
     // TODO: create a main version where projectID is the lateset inserted projectID;
     const versionSQL = 'INSERT INTO version (version_name, version_number, project_id) VALUES (?, ?, ?)';
@@ -83,7 +85,7 @@ const createUserProject = async (projectName, projectDescription, isPublic, user
   }
   await connection.commit();
   connection.release();
-  return { msg: 'Project created.' };
+  return { projectID };
 };
 
 module.exports = {

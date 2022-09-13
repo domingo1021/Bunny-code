@@ -123,6 +123,7 @@ const getUserProjects = async (req, res) => {
 };
 
 const createUserProject = async (req, res) => {
+  console.log('Createing project');
   const { userID } = req.params;
   const {
     projectName, projectDescription, isPublic, versionName, fileName,
@@ -134,6 +135,11 @@ const createUserProject = async (req, res) => {
     return res.status(400).json({ msg: 'project name or description is too long.' });
   }
   const insertResponse = await User.createUserProject(projectName, projectDescription, +isPublic, +userID, versionName, fileName);
+  if (insertResponse.msg) {
+    return res.status(400).json({
+      ...insertResponse,
+    });
+  }
   return res.status(201).json({
     data: {
       ...insertResponse,
@@ -147,10 +153,13 @@ const authResponse = (req, res) => res.status(200).json({
   },
 });
 
+const userIDResponse = (req, res) => res.status(200).json({ data: req.user.id });
+
 module.exports = {
   userSignUp,
   userSignIn,
   getUserProjects,
   createUserProject,
   authResponse,
+  userIDResponse,
 };
