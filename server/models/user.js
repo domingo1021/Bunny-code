@@ -40,12 +40,20 @@ const getUserDetail = async (email, roleId) => {
   }
 };
 
-const getUserProjects = async (userID) => {
-  const sql = `SELECT project_id as projectID, project_name as projectName, project_description as projectDescription,
+const getUserProjects = async (userID, category) => {
+  let sql;
+  if (category === 'all') {
+    sql = `SELECT project_id as projectID, project_name as projectName, project_description as projectDescription,
+    watch_count as watchCount, star_count as starCount, is_public as isPublic, create_at as createAt 
+    FROM project
+    WHERE user_id = ? AND deleted = 0
+    ORDER BY create_at DESC;`;
+  }
+  sql = `SELECT project_id as projectID, project_name as projectName, project_description as projectDescription,
   watch_count as watchCount, star_count as starCount, is_public as isPublic, create_at as createAt 
   FROM project
-  WHERE user_id = ? AND deleted = 0;`;
-  console.log(userID);
+  WHERE user_id = ? AND deleted = 0 AND is_public = 1
+  ORDER BY create_at DESC;`;
   const [selectResponse] = await pool.execute(sql, [userID]);
   return selectResponse;
 };
@@ -54,9 +62,11 @@ const createUserProject = async (projectName, projectDescription, isPublic, user
   // TODO: 預設 version, file (fileURL 使用 S3 空的 js file (default) );
   const connection = await pool.getConnection();
   await connection.beginTransaction();
+  let projectID;
   try {
     const projectSQL = 'INSERT INTO project (project_name, project_description, is_public, user_id) VALUES (?, ?, ?, ?);';
     const [projectResponse] = await connection.execute(projectSQL, [projectName, projectDescription, isPublic, userID]);
+    projectID = projectResponse.insertId;
     console.log('projectID = ', projectResponse.insertId);
     // TODO: create a main version where projectID is the lateset inserted projectID;
     const versionSQL = 'INSERT INTO version (version_name, version_number, project_id) VALUES (?, ?, ?)';
@@ -75,7 +85,7 @@ const createUserProject = async (projectName, projectDescription, isPublic, user
   }
   await connection.commit();
   connection.release();
-  return { msg: 'Project created.' };
+  return { projectID };
 };
 
 module.exports = {

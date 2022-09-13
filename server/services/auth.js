@@ -82,7 +82,7 @@ const authorization = async (req, res, next) => {
   }
 
   req.user.id = userDetail.user_id;
-  if (userDetail.id === +userID) {
+  if (userDetail.user_id === +userID) {
     req.clientCategory = CLIENT_CATEGORY.self;
     return next();
   }
@@ -117,5 +117,5 @@ const blockSelf = (req, res, next) => {
 };
 
 module.exports = {
-  createJWTtoken, authMiddleware, AuthenticationError, jwtAuthenticate, authorization, blockNotSelf, blockSelf,
+  createJWTtoken, authMiddleware, AuthenticationError, jwtAuthenticate, authorization, blockNotSelf, blockSelf, CLIENT_CATEGORY,
 };

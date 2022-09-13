@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const validator = require('express-validator');
-const { createJWTtoken } = require('../services/auth');
+const { createJWTtoken, jwtAuthenticate } = require('../services/auth');
 const User = require('../models/user');
 
 const userSignIn = async (req, res) => {
@@ -100,11 +100,30 @@ const userSignUp = async (req, res) => {
 
 const getUserProjects = async (req, res) => {
   const { userID } = req.params;
-  const projects = await User.getUserProjects(userID);
+  const token = req.headers.authorization;
+  let userPayload;
+  try {
+    userPayload = await jwtAuthenticate(token);
+  } catch (error) {
+    userPayload = { id: -1 };
+  }
+  console.log(userPayload);
+  let projects;
+  try {
+    if (userID === userPayload.id) {
+      projects = await User.getUserProjects(userID, 'all');
+    } else {
+      projects = await User.getUserProjects(userID, 'public');
+    }
+  } catch (error) {
+    console.log(error);
+    return res.stauts(400).json({ msg: 'well' });
+  }
   return res.status(200).json({ data: projects });
 };
 
 const createUserProject = async (req, res) => {
+  console.log('Createing project');
   const { userID } = req.params;
   const {
     projectName, projectDescription, isPublic, versionName, fileName,
@@ -116,6 +135,11 @@ const createUserProject = async (req, res) => {
     return res.status(400).json({ msg: 'project name or description is too long.' });
   }
   const insertResponse = await User.createUserProject(projectName, projectDescription, +isPublic, +userID, versionName, fileName);
+  if (insertResponse.msg) {
+    return res.status(400).json({
+      ...insertResponse,
+    });
+  }
   return res.status(201).json({
     data: {
       ...insertResponse,
@@ -123,9 +147,19 @@ const createUserProject = async (req, res) => {
   });
 };
 
+const authResponse = (req, res) => res.status(200).json({
+  data: {
+    clientCategory: req.clientCategory,
+  },
+});
+
+const userIDResponse = (req, res) => res.status(200).json({ data: req.user.id });
+
 module.exports = {
   userSignUp,
   userSignIn,
   getUserProjects,
   createUserProject,
+  authResponse,
+  userIDResponse,
 };

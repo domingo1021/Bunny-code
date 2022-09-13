@@ -46,6 +46,7 @@ const projectDetials = async (projectName) => {
 };
 
 const searchProjects = async (keywords, paging) => {
+  console.log(keywords, paging);
   const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, u.user_name as userName
   FROM project as p
   LEFT JOIN user as u
@@ -54,13 +55,24 @@ const searchProjects = async (keywords, paging) => {
   ORDER BY create_at DESC
   LIMIT ? OFFSET ?
   `;
+  const countSQL = `
+  SELECT count(project_id) as count 
+  FROM project as p
+  LEFT JOIN user as u
+  ON p.user_id = u.user_id
+  WHERE is_public = 1 AND (p.project_name LIKE ? OR p.project_description LIKE ? OR u.user_name LIKE ?);`;
+  const connection = await pool.getConnection();
   const likeString = `%${keywords}%`;
   const limitCount = paging * 6;
-  const [keywordProducts] = await pool.query(sql, [likeString, likeString, likeString, 6, limitCount]);
-  return keywordProducts;
+  const [keywordProducts] = await connection.query(sql, [likeString, likeString, likeString, 6, limitCount]);
+  const [projectCounts] = await connection.execute(countSQL, [likeString, likeString, likeString]);
+  const allPage = Math.floor(projectCounts[0].count / 6) + 1;
+  connection.release();
+  return { projects: keywordProducts, page: paging + 1, allPage };
 };
 
 const getAllProjects = async (paging) => {
+  const connection = await pool.getConnection();
   const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, u.user_name as userName
   FROM project as p
   LEFT JOIN user as u
@@ -68,9 +80,13 @@ const getAllProjects = async (paging) => {
   WHERE is_public = 1
   ORDER BY create_at DESC
   LIMIT ? OFFSET ?`;
+  const countSQL = 'SELECT count(project_id) as count FROM project WHERE is_public = 1;';
   const limitCount = paging * 6;
-  const [allProducts] = await pool.query(sql, [6, limitCount]);
-  return allProducts;
+  const [allProject] = await connection.query(sql, [6, limitCount]);
+  const [projectCounts] = await connection.execute(countSQL);
+  const allPage = Math.floor(projectCounts[0].count / 6) + 1;
+  connection.release();
+  return { projects: allProject, page: paging + 1, allPage };
 };
 
 const createProjectVersion = async (versionName, projectID) => {
