@@ -38,16 +38,16 @@ const writeRecord = async (req, res) => {
   // TODO: insert into S3 storage with file snapshot.
   // TODO: insert into mysql database with specific datetime （start & end).
   const {
-    userID, projectID, versionID, fileName, checkpointNumber,
+    userID, projectID, versionID, fileName,
   } = req.body;
   const batchData = JSON.parse(req.body.batchData);
   console.log(batchData);
   const writeApi = timeDB.getWriteApi(INFLUX_ORG, INFLUX_BUCKET, 'ns');
   const points = batchData.map((data) => {
     if (KEY_MANAGE.includes(data.action)) {
-      return `${userID},project=${projectID},version=${versionID},file=${fileName},checkpoint=${checkpointNumber},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
+      return `${userID},project=${projectID},version=${versionID},file=${fileName},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
     }
-    return `${userID},project=${projectID},version=${versionID},file=${fileName},checkoutpoint=${checkpointNumber},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
+    return `${userID},project=${projectID},version=${versionID},file=${fileName},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
   });
 
   writeApi.writeRecords(points);
@@ -107,7 +107,6 @@ const queryRecord = async (req, res) => {
           project: responseRow.project,
           version: responseRow.version,
           file: responseRow.file,
-          checkpoint: responseRow.checkpoint,
           action: responseRow.action,
           index: responseRow.index,
           line: responseRow.line,
