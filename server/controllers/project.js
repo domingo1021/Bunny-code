@@ -1,3 +1,4 @@
+require('dotenv').config();
 const Project = require('../models/project');
 const Exception = require('../services/execption');
 
@@ -8,7 +9,6 @@ const searchProjects = async (keywords, paging) => {
 
 const projectDetails = async (projectName) => {
   const detailResults = await Project.projectDetials(projectName);
-  console.log(detailResults);
   if (detailResults === -1) {
     throw new Exception('Bad request', 400);
   }
@@ -23,6 +23,7 @@ const projectDetails = async (projectName) => {
     fileData.forEach((file) => {
       if (file.length !== 0) {
         if (version.versionID === file[0].versionID) {
+          file[0].fileURL = process.env.AWS_DISTRIBUTION_NAME + file[0].fileURL;
           version.files.push(file[0]);
         }
       }
