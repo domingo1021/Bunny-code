@@ -10,7 +10,7 @@ router.post('/compiler', runCompiler);
 
 router.route('/record').post(writeRecord);
 
-router.route('/history/:userID').post(queryRecord);
+router.route('/history/:projectID').post(queryRecord);
 
 router.route('/record/file').get(getFiles).post(authMiddleware, fileUploader, uploadS3, writeFile);
 

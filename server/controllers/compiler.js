@@ -38,16 +38,16 @@ const writeRecord = async (req, res) => {
   // TODO: insert into S3 storage with file snapshot.
   // TODO: insert into mysql database with specific datetime （start & end).
   const {
-    userID, projectID, versionID, fileName,
+    projectID, versionID, fileName,
   } = req.body;
+  console.log(projectID, versionID, fileName);
   const batchData = JSON.parse(req.body.batchData);
-  console.log(batchData);
   const writeApi = timeDB.getWriteApi(INFLUX_ORG, INFLUX_BUCKET, 'ns');
   const points = batchData.map((data) => {
     if (KEY_MANAGE.includes(data.action)) {
-      return `${userID},project=${projectID},version=${versionID},file=${fileName},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
+      return `${projectID},version=${versionID},file=${fileName},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
     }
-    return `${userID},project=${projectID},version=${versionID},file=${fileName},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
+    return `${projectID},version=${versionID},file=${fileName},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
   });
 
   writeApi.writeRecords(points);
@@ -62,10 +62,11 @@ const writeRecord = async (req, res) => {
   try {
     await writeApi.close();
     response = 'success';
+    return res.status(200).send(response);
   } catch (error) {
     response = 'failed';
+    return res.status(500).send(response);
   }
-  return res.status(200).send(response);
 
   // TODO: write data into influx db
   // TODO: choose: batch or separately
@@ -75,9 +76,9 @@ const writeRecord = async (req, res) => {
 
 const queryRecord = async (req, res) => {
   // TODO: get time from MySQL DB.
-  const { userID } = req.params;
+  const { projectID } = req.params;
   const {
-    projectID, startTime, stopTime,
+    versionID, startTime, stopTime,
   } = req.body;
   // const userID = 1;
   // const projectID = 1;
@@ -85,14 +86,14 @@ const queryRecord = async (req, res) => {
   // const stopTime = '2022-10-30T04:25:32.47Z';
   // Flux query
   const queryApi = timeDB.getQueryApi(INFLUX_ORG);
-  console.log(userID, projectID, startTime, stopTime);
+  console.log(projectID, versionID, startTime, stopTime);
 
   // filter
   const query = `from(bucket: "bunny")
                   |> range(start: ${startTime}, stop: ${stopTime})
                   |> group(columns: ["_measurement"])
-                  |> filter(fn: (r) => r["_measurement"] == "${userID}")
-                  |> filter(fn: (r) => r["project"] == "${projectID}")
+                  |> filter(fn: (r) => r["_measurement"] == "${projectID}")
+                  |> filter(fn: (r) => r["version"] == "${versionID}")
                   |> sort(columns: ["_time"])
                 `;
 
@@ -103,8 +104,7 @@ const queryRecord = async (req, res) => {
       next(row, tableMeta) {
         const responseRow = tableMeta.toObject(row);
         const tmpCobject = {
-          userID: responseRow._measurement,
-          project: responseRow.project,
+          project: responseRow._measurement,
           version: responseRow.version,
           file: responseRow.file,
           action: responseRow.action,
