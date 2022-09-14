@@ -4,7 +4,7 @@ const express = require('express');
 // } = require('../services/auth');
 
 const {
-  getProjects, getProejctVersions, createProjectVersion,
+  getProjects, getProejctVersions, createProjectVersion, updateProject,
 } = require('../controllers/project');
 
 const router = express.Router();
@@ -12,6 +12,7 @@ const router = express.Router();
 // project category
 // proejct search
 router.get('/project/:information', getProjects);
+router.route('/project/:information').get(getProjects).put(updateProject);
 
 router.get('/project/:projectID/version/:information');
 

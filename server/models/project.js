@@ -154,10 +154,28 @@ const getProejctVeriosn = () => {
   return '';
 };
 
+const updateWatchCount = async (projectID) => {
+  const sql = `
+  UPDATE project SET watch_count = watch_count + 1 WHERE project_id = ?;
+  `;
+  const [updateResponse] = await pool.execute(sql, [projectID]);
+  console.log('Update watch Response:', updateResponse);
+};
+
+const updateStarCount = async (projectID) => {
+  const sql = `
+  UPDATE project SET star_count = star_count + 1 WHERE project_id = ?;
+  `;
+  const [updateResponse] = await pool.execute(sql, [projectID]);
+  console.log('Update star Response:', updateResponse);
+};
+
 module.exports = {
   searchProjects,
   getAllProjects,
   createProjectVersion,
   getProejctVeriosn,
   projectDetials,
+  updateWatchCount,
+  updateStarCount,
 };

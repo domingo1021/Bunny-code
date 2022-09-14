@@ -99,8 +99,39 @@ const createProjectVersion = async (req, res) => {
   return res.status(201).json({ data: { versionID } });
 };
 
+const updateProject = async (req, res) => {
+  // TODO: update user status or add new record when user click star.
+  const { information } = req.params;
+  const { projectID } = req.query;
+  if (!projectID) {
+    return res.status(400).json({ msg: 'Lake of data: projectID' });
+  }
+  switch (information) {
+    case 'watch':
+      try {
+        await Project.updateWatchCount(projectID);
+      } catch (error) {
+        console.log('update watch count exception: ', error);
+        return res.status(500).json({ msg: 'Internal server error' });
+      }
+      break;
+    case 'star':
+      try {
+        await Project.updateStarCount(projectID);
+      } catch (error) {
+        console.log('update star count exception: ', error);
+        return res.status(500).json({ msg: 'Internal server error' });
+      }
+      break;
+    default:
+      return res.status(400).json({ msg: 'Bad request' });
+  }
+  return res.status(204).json({ data: 'No content' });
+};
+
 module.exports = {
   getProjects,
   getProejctVersions,
   createProjectVersion,
+  updateProject,
 };
