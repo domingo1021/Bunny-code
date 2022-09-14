@@ -4,6 +4,7 @@ const { jwtAuthenticate, AuthenticationError } = require('./server/services/auth
 const { authorization, CLIENT_CATEGORY } = require('./socket/util');
 const { queryBattler, getInvitations } = require('./socket/battle');
 const { versionEditStatus, editVersion, unEditing } = require('./socket/editor');
+const { getUserByName } = require('./socket/user');
 const { compile } = require('./server/services/service');
 // const { writeRecord, queryRecord } = require('./server/controllers/codeRecord');
 
@@ -94,9 +95,20 @@ io.on('connection', async (socket) => {
     socket.to(recordObject.battleID).emit('newCodes', recordObject);
   });
 
+  socket.on('searchUsers', async (userName) => {
+    if (!userName) {
+      socket.emit('responseUsers', ({
+        msg: 'Lake of data',
+      }));
+    }
+    const searchResponse = await getUserByName(userName);
+    socket.emit('responseUsers', searchResponse);
+  });
+
   socket.on('getInvitations', async () => {
     if (socket.user.id !== -1) {
       const invitations = await getInvitations(socket.user.id);
+      console.log('return Inviations', invitations);
       socket.emit('returnInvitations', invitations);
     }
   });

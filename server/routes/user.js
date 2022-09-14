@@ -7,6 +7,7 @@ const {
   createUserProject,
   authResponse,
   userIDResponse,
+  getUserByName,
 } = require('../controllers/user');
 const { checkPassword, checkEmail, checkApplicationJSON } = require('../services/validation');
 const {
@@ -46,6 +47,8 @@ router.route('/user/:userID/project').get(getUserProjects).post(authMiddleware, 
 router.route('/user/:userID/auth').get(authMiddleware, authorization, authResponse);
 
 router.route('/user/auth').get(authMiddleware, userIDResponse);
+
+router.get('/user/search', getUserByName);
 // router.get('/user/:userID/test-auth', authMiddleware, authorization, (req, res) => res.send({
 //   id: req.user.id,
 //   category: req.clientCategory,
