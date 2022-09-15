@@ -32,6 +32,7 @@
     "multer": "^1.4.5-lts.1",
     "mysql2": "^2.3.3",
     "prettier": "^2.7.1",
+    "redis": "^4.3.1",
     "socket.io": "^4.5.1"
   },
   "devDependencies": {

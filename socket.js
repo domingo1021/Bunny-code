@@ -6,6 +6,7 @@ const { queryBattler, getInvitations } = require('./socket/battle');
 const { versionEditStatus, editVersion, unEditing } = require('./socket/editor');
 const { getUserByName } = require('./socket/user');
 const { compile } = require('./server/services/service');
+const Cache = require('./utils/cache');
 // const { writeRecord, queryRecord } = require('./server/controllers/codeRecord');
 
 const io = new Server(httpServer, {
@@ -37,6 +38,7 @@ io.use(async (socket, next) => {
 // TODO: 如果是本人進入頁面（認為想要 edit）, 則建立 Socket, 並更動 edit 狀態，
 
 io.on('connection', async (socket) => {
+  console.log(`socketID: ${socket.id} come in`);
   // for workspace
   socket.on('checkProjectStatus', async (projectObject) => {
     console.log(`user #${socket.user.id} connecting...`);
@@ -52,6 +54,9 @@ io.on('connection', async (socket) => {
     responseObject = await versionEditStatus(socket.user.id, projectObject.projectID, projectObject.versionID);
     if (!responseObject.readOnly) {
       socket.versionID = projectObject.versionID;
+      if (Cache.ready) {
+        await Cache.set(`${projectObject.versionID}`, `${socket.id}`);
+      }
     }
     console.log(responseObject);
     socket.emit('statusChecked', responseObject);
@@ -59,16 +64,32 @@ io.on('connection', async (socket) => {
 
   // TODO: have to disconnect user who has been editing the version;
   socket.on('changeEdit', async (projectObject) => {
-    let responseObject = {
+    const viewerResponse = {
       readOnly: true,
       authorization: false,
     };
     if (socket.user.id === -1 || !projectObject.versionID || !projectObject.projectID) {
-      socket.emit('statusChecked', responseObject);
+      socket.emit('statusChecked', viewerResponse);
       return;
     }
-    responseObject = await editVersion(socket.user.id, projectObject.projectID, projectObject.versionID);
-    socket.emit('statusChecked', responseObject);
+    const [killObject, userObject] = await editVersion(socket.user.id, projectObject.projectID, projectObject.versionID);
+    if (killObject.kill && projectObject.kill) {
+      const socketID = await Cache.get(`${projectObject.versionID}`);
+      // TODO: 將原本正在 edit 的 socket 刪掉 --> 從 Redis 裡面去撈 versionID : socketID;
+      console.log(`ready to kill a socket ${socketID}`);
+      io.sockets.sockets.forEach((ws) => {
+        if (ws.id === socketID) { ws.disconnect(true); }
+      });
+    }
+    if (Cache.ready) {
+      await Cache.set(`${projectObject.versionID}`, `${socket.id}`);
+    }
+    // TODO: 存入 Redis, 表示某個 socket 正在編輯程式碼
+    // Redis SET key = versionID, value = socketID
+    socket.emit('statusChecked', userObject);
+  });
+
+  socket.on('unEdit', async (versionID) => {
   });
 
   // for battle
@@ -129,8 +150,21 @@ io.on('connection', async (socket) => {
     });
   });
 
+  // socket.on('killMe', () => {
+  //   // console.log('ready to kill: ', socket.user.id);
+  //   // console.log('io.sockets: ', io.sockets);
+  //   // console.log('io.sockets.sockets: ', io.sockets.sockets);
+  //   // console.log('socket id: ', socket.id);
+  //   // io.sockets.sockets[socket.id].disconnect();
+  // });
+
   socket.on('disconnect', async () => {
     if (socket.category === 'workspace' && socket.versionID !== undefined) {
+      if (Cache.ready) {
+        console.log('redis delete ..');
+        await Cache.del(`${socket.versionID}`);
+      }
+      console.log(`DB update edit status of version${socket.versionID}`);
       await unEditing(socket.versionID);
     }
     // check if user in battle room, otherwise, update user project status to unediting.

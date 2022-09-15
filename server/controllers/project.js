@@ -35,7 +35,6 @@ const projectDetails = async (projectName) => {
         }
       }
     });
-    console.log('check record date: ', recordData);
     return version;
   });
   const responseObject = {
@@ -97,7 +96,6 @@ const createProjectVersion = async (req, res) => {
     return res.status(400).json({ msg: 'Lake of data' });
   }
   const responseObject = await Project.createProjectVersion(versionName, fileName, +projectID);
-  console.log('create project version: ', responseObject);
   if (responseObject === {}) {
     console.log('return 400.');
     return res.status(400).json({ msg: 'Invalid data.' });

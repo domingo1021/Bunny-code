@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const Cache = require('./utils/cache');
 const { FileUploadException } = require('./server/services/service');
 
 const { SERVER_PORT, API_VERSION } = process.env;
@@ -36,6 +37,9 @@ app.use((err, req, res, next) => {
 });
 
 const httpServer = app.listen(SERVER_PORT, () => {
+  Cache.connect().catch(() => {
+    console.log('redis connect fail');
+  });
   console.log(`Listening at port ${SERVER_PORT}`);
 });
 

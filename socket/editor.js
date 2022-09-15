@@ -1,6 +1,7 @@
 const pool = require('../utils/rmdb');
 
 const versionEditStatus = async (userID, projectID, versionID) => {
+  console.log(`user ${userID} is reading project-${projectID}, version-${versionID}`);
   try {
     const connection = await pool.getConnection();
     const projectSQL = 'SELECT user_id as userID FROM project WHERE project_id = ?';
@@ -14,6 +15,7 @@ const versionEditStatus = async (userID, projectID, versionID) => {
     }
     const versionSQL = 'SELECT editing FROM version WHERE version_id = ?';
     const [versionResponse] = await connection.execute(versionSQL, [versionID]);
+    console.log('version response: ', versionResponse);
     if (versionResponse[0].editing !== 0) {
       connection.release();
       return {
@@ -44,6 +46,7 @@ const editVersion = async (userID, projectID, versionID) => {
   if (userID !== proejctRepsonse[0].userID) {
     connection.release();
     return {
+      kill: false,
       readOnly: false,
       authorization: false,
     };
@@ -53,25 +56,15 @@ const editVersion = async (userID, projectID, versionID) => {
   const [statusResponse] = await connection.execute(getEditStatus, [versionID]);
   console.log('statusResponse: ', statusResponse);
   if (statusResponse[0].editing) {
-    const newStatus = 0;
-    const changeStatusSQL = 'UPDATE version SET editing = ? WHERE version_id = ?';
-    console.log([newStatus, versionID]);
-    await connection.execute(changeStatusSQL, [newStatus, versionID]);
     connection.release();
-    return {
-      readOnly: false,
-      authorization: true,
-    };
+    return [{ kill: true }, { readOnly: false, authorization: true }];
   }
   const newStatus = 1;
   const changeStatusSQL = 'UPDATE version SET editing = ? WHERE version_id = ?';
   await connection.execute(changeStatusSQL, [newStatus, versionID]);
   connection.release();
   // const versionSQL =
-  return {
-    readOnly: true,
-    authorization: true,
-  };
+  return [{ kill: false }, { readOnly: false, authorization: true }];
 };
 
 const unEditing = async (versionID) => {
