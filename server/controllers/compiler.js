@@ -38,36 +38,43 @@ const writeRecord = async (req, res) => {
   // TODO: insert into S3 storage with file snapshot.
   // TODO: insert into mysql database with specific datetime （start & end).
   const {
-    projectID, versionID, fileName,
+    projectID, baseURL, versionID, fileID,
   } = req.body;
-  console.log(projectID, versionID, fileName);
+  console.log(projectID, baseURL, versionID, fileID);
   const batchData = JSON.parse(req.body.batchData);
+  const startTime = new Date(+batchData[0].timestamp.substring(0, 13) - 1000000);
+  const endTime = new Date(+batchData[batchData.length - 1].timestamp.substring(0, 13) + 1000000);
+  let recordID;
+  try {
+    recordID = await Compiler.writeRecord(versionID, baseURL, startTime, endTime);
+  } catch (error) {
+    console.log('Write record excpetion: ', error.msg);
+    return res.status(error.status).json({ msg: error.msg });
+  }
+
   const writeApi = timeDB.getWriteApi(INFLUX_ORG, INFLUX_BUCKET, 'ns');
   const points = batchData.map((data) => {
     if (KEY_MANAGE.includes(data.action)) {
-      return `${projectID},version=${versionID},file=${fileName},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
+      return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
     }
-    return `${projectID},version=${versionID},file=${fileName},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
+    return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
   });
 
   writeApi.writeRecords(points);
 
-  const startTime = new Date(+batchData[0].timestamp.substring(0, 13));
-  const endTime = new Date(+batchData[batchData.length - 1].timestamp.substring(0, 13));
-
-  // TODO: add check point column
-  await Compiler.writeRecord(versionID, startTime, endTime);
-
-  let response;
   try {
     await writeApi.close();
-    response = 'success';
-    return res.status(200).send(response);
+    return res.status(200).json({
+      recordID,
+      versionID,
+      startTime,
+      baseURL,
+      endTime,
+    });
   } catch (error) {
-    response = 'failed';
-    return res.status(500).send(response);
+    return res.status(500).json({ msg: 'Time series record failed' });
   }
-
+  // retrun coressponding datetime (start and end), frontend 會直接 Flush 之前的記錄，MySQL 之前的 record 紀錄也都放成 deleted.
   // TODO: write data into influx db
   // TODO: choose: batch or separately
   // TODO: send to MySQL db (start time, end time)

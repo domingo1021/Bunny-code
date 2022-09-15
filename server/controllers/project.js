@@ -35,6 +35,7 @@ const projectDetails = async (projectName) => {
         }
       }
     });
+    console.log('check record date: ', recordData);
     return version;
   });
   const responseObject = {
@@ -91,12 +92,17 @@ const getProejctVersions = async (req, res) => {
 
 const createProjectVersion = async (req, res) => {
   const { projectID } = req.params;
-  const { versionName } = req.body;
-  const versionID = await Project.createProjectVersion(versionName, projectID);
-  if (versionID === -1) {
-    return res.status(400).json({ message: 'Invalid data.' });
+  const { versionName, fileName } = req.body;
+  if (!projectID || !versionName || !fileName) {
+    return res.status(400).json({ msg: 'Lake of data' });
   }
-  return res.status(201).json({ data: { versionID } });
+  const responseObject = await Project.createProjectVersion(versionName, fileName, +projectID);
+  console.log('create project version: ', responseObject);
+  if (responseObject === {}) {
+    console.log('return 400.');
+    return res.status(400).json({ msg: 'Invalid data.' });
+  }
+  return res.status(201).json({ data: { ...responseObject } });
 };
 
 const updateProject = async (req, res) => {
@@ -109,7 +115,8 @@ const updateProject = async (req, res) => {
   switch (information) {
     case 'watch':
       try {
-        await Project.updateWatchCount(projectID);
+        console.log('put call project', +projectID);
+        await Project.updateWatchCount(+projectID);
       } catch (error) {
         console.log('update watch count exception: ', error);
         return res.status(500).json({ msg: 'Internal server error' });
@@ -117,7 +124,7 @@ const updateProject = async (req, res) => {
       break;
     case 'star':
       try {
-        await Project.updateStarCount(projectID);
+        await Project.updateStarCount(+projectID);
       } catch (error) {
         console.log('update star count exception: ', error);
         return res.status(500).json({ msg: 'Internal server error' });

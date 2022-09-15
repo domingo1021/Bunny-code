@@ -11,7 +11,7 @@ const router = express.Router();
 
 // project category
 // proejct search
-router.get('/project/:information', getProjects);
+// router.get('/project/:information', getProjects);
 router.route('/project/:information').get(getProjects).put(updateProject);
 
 router.get('/project/:projectID/version/:information');
