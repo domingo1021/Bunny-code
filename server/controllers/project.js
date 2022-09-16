@@ -1,3 +1,4 @@
+require('dotenv').config();
 const Project = require('../models/project');
 const Exception = require('../services/execption');
 
@@ -8,7 +9,6 @@ const searchProjects = async (keywords, paging) => {
 
 const projectDetails = async (projectName) => {
   const detailResults = await Project.projectDetials(projectName);
-  console.log(detailResults);
   if (detailResults === -1) {
     throw new Exception('Bad request', 400);
   }
@@ -23,6 +23,7 @@ const projectDetails = async (projectName) => {
     fileData.forEach((file) => {
       if (file.length !== 0) {
         if (version.versionID === file[0].versionID) {
+          file[0].fileURL = process.env.AWS_DISTRIBUTION_NAME + file[0].fileURL;
           version.files.push(file[0]);
         }
       }
@@ -90,16 +91,52 @@ const getProejctVersions = async (req, res) => {
 
 const createProjectVersion = async (req, res) => {
   const { projectID } = req.params;
-  const { versionName } = req.body;
-  const versionID = await Project.createProjectVersion(versionName, projectID);
-  if (versionID === -1) {
-    return res.status(400).json({ message: 'Invalid data.' });
+  const { versionName, fileName } = req.body;
+  if (!projectID || !versionName || !fileName) {
+    return res.status(400).json({ msg: 'Lake of data' });
   }
-  return res.status(201).json({ data: { versionID } });
+  const responseObject = await Project.createProjectVersion(versionName, fileName, +projectID);
+  if (responseObject === {}) {
+    console.log('return 400.');
+    return res.status(400).json({ msg: 'Invalid data.' });
+  }
+  return res.status(201).json({ data: { ...responseObject } });
+};
+
+const updateProject = async (req, res) => {
+  // TODO: update user status or add new record when user click star.
+  const { information } = req.params;
+  const { projectID } = req.query;
+  if (!projectID) {
+    return res.status(400).json({ msg: 'Lake of data: projectID' });
+  }
+  switch (information) {
+    case 'watch':
+      try {
+        console.log('put call project', +projectID);
+        await Project.updateWatchCount(+projectID);
+      } catch (error) {
+        console.log('update watch count exception: ', error);
+        return res.status(500).json({ msg: 'Internal server error' });
+      }
+      break;
+    case 'star':
+      try {
+        await Project.updateStarCount(+projectID);
+      } catch (error) {
+        console.log('update star count exception: ', error);
+        return res.status(500).json({ msg: 'Internal server error' });
+      }
+      break;
+    default:
+      return res.status(400).json({ msg: 'Bad request' });
+  }
+  return res.status(204).json({ data: 'No content' });
 };
 
 module.exports = {
   getProjects,
   getProejctVersions,
   createProjectVersion,
+  updateProject,
 };

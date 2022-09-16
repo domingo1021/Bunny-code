@@ -38,35 +38,43 @@ const writeRecord = async (req, res) => {
   // TODO: insert into S3 storage with file snapshot.
   // TODO: insert into mysql database with specific datetime （start & end).
   const {
-    userID, projectID, versionID, fileName, checkpointNumber,
+    projectID, baseURL, versionID, fileID,
   } = req.body;
+  console.log(projectID, baseURL, versionID, fileID);
   const batchData = JSON.parse(req.body.batchData);
-  console.log(batchData);
+  const startTime = new Date(+batchData[0].timestamp.substring(0, 13) - 1000000);
+  const endTime = new Date(+batchData[batchData.length - 1].timestamp.substring(0, 13) + 1000000);
+  let recordID;
+  try {
+    recordID = await Compiler.writeRecord(versionID, baseURL, startTime, endTime);
+  } catch (error) {
+    console.log('Write record excpetion: ', error.msg);
+    return res.status(error.status).json({ msg: error.msg });
+  }
+
   const writeApi = timeDB.getWriteApi(INFLUX_ORG, INFLUX_BUCKET, 'ns');
   const points = batchData.map((data) => {
     if (KEY_MANAGE.includes(data.action)) {
-      return `${userID},project=${projectID},version=${versionID},file=${fileName},checkpoint=${checkpointNumber},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
+      return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
     }
-    return `${userID},project=${projectID},version=${versionID},file=${fileName},checkoutpoint=${checkpointNumber},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
+    return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
   });
 
   writeApi.writeRecords(points);
 
-  const startTime = new Date(+batchData[0].timestamp.substring(0, 13));
-  const endTime = new Date(+batchData[batchData.length - 1].timestamp.substring(0, 13));
-
-  // TODO: add check point column
-  await Compiler.writeRecord(versionID, startTime, endTime);
-
-  let response;
   try {
     await writeApi.close();
-    response = 'success';
+    return res.status(200).json({
+      recordID,
+      versionID,
+      startTime,
+      baseURL,
+      endTime,
+    });
   } catch (error) {
-    response = 'failed';
+    return res.status(500).json({ msg: 'Time series record failed' });
   }
-  return res.status(200).send(response);
-
+  // retrun coressponding datetime (start and end), frontend 會直接 Flush 之前的記錄，MySQL 之前的 record 紀錄也都放成 deleted.
   // TODO: write data into influx db
   // TODO: choose: batch or separately
   // TODO: send to MySQL db (start time, end time)
@@ -75,9 +83,9 @@ const writeRecord = async (req, res) => {
 
 const queryRecord = async (req, res) => {
   // TODO: get time from MySQL DB.
-  const { userID } = req.params;
+  const { projectID } = req.params;
   const {
-    projectID, startTime, stopTime,
+    versionID, startTime, stopTime,
   } = req.body;
   // const userID = 1;
   // const projectID = 1;
@@ -85,14 +93,14 @@ const queryRecord = async (req, res) => {
   // const stopTime = '2022-10-30T04:25:32.47Z';
   // Flux query
   const queryApi = timeDB.getQueryApi(INFLUX_ORG);
-  console.log(userID, projectID, startTime, stopTime);
+  console.log(projectID, versionID, startTime, stopTime);
 
   // filter
   const query = `from(bucket: "bunny")
                   |> range(start: ${startTime}, stop: ${stopTime})
                   |> group(columns: ["_measurement"])
-                  |> filter(fn: (r) => r["_measurement"] == "${userID}")
-                  |> filter(fn: (r) => r["project"] == "${projectID}")
+                  |> filter(fn: (r) => r["_measurement"] == "${projectID}")
+                  |> filter(fn: (r) => r["version"] == "${versionID}")
                   |> sort(columns: ["_time"])
                 `;
 
@@ -103,11 +111,9 @@ const queryRecord = async (req, res) => {
       next(row, tableMeta) {
         const responseRow = tableMeta.toObject(row);
         const tmpCobject = {
-          userID: responseRow._measurement,
-          project: responseRow.project,
+          project: responseRow._measurement,
           version: responseRow.version,
           file: responseRow.file,
-          checkpoint: responseRow.checkpoint,
           action: responseRow.action,
           index: responseRow.index,
           line: responseRow.line,

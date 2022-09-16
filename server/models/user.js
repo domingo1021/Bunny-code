@@ -88,6 +88,17 @@ const createUserProject = async (projectName, projectDescription, isPublic, user
   return { projectID };
 };
 
+const getUserByName = async (userName) => {
+  const searchSQL = `SELECT user_id as userID, user_name as userName, picture, follower_count as followerCount 
+  FROM user
+  WHERE user_name LIKE ?
+  ORDER BY follower_count
+  `;
+  const keywordLike = `%${userName}%`;
+  const [searchResponse] = await pool.execute(searchSQL, [keywordLike]);
+  return searchResponse;
+};
+
 module.exports = {
-  signUp, signIn, getUserDetail, getUserProjects, createUserProject,
+  signUp, signIn, getUserDetail, getUserProjects, createUserProject, getUserByName,
 };

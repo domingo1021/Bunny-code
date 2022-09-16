@@ -1,3 +1,4 @@
+require('dotenv').config();
 const pool = require('../../utils/rmdb');
 
 const projectDetials = async (projectName) => {
@@ -20,7 +21,7 @@ const projectDetials = async (projectName) => {
   ORDER BY file_id DESC
   `;
   const recordSQL = `
-  SELECT record_id as recordID, start_time as startTime, end_time as endTime, version_id as versionID
+  SELECT record_id as recordID, base_url as baseURL, start_time as startTime, end_time as endTime, version_id as versionID
   FROM record
   WHERE version_id = ? AND deleted = 0;
   `;
@@ -37,6 +38,9 @@ const projectDetials = async (projectName) => {
   }));
   const recordResponses = await Promise.all(versionResponse.map(async (version) => {
     const [tmpFileReponse] = await pool.execute(recordSQL, [version.versionID]);
+    // tmpFileReponse.forEach((response) => {
+    //   response.baseURL = process.env.AWS_DISTRIBUTION_NAME + response.baseURL;
+    // });
     return tmpFileReponse;
   }));
   // console.log(fileResponses);
@@ -89,7 +93,7 @@ const getAllProjects = async (paging) => {
   return { projects: allProject, page: paging + 1, allPage };
 };
 
-const createProjectVersion = async (versionName, projectID) => {
+const createProjectVersion = async (versionName, fileName, projectID) => {
   // TODO: check whether version name exists.
   const connection = await pool.getConnection();
   await connection.beginTransaction();
@@ -112,30 +116,47 @@ const createProjectVersion = async (versionName, projectID) => {
   } else {
     versionNumber = selectResponse[0].versionNumber + 1;
   }
-  let createResponse;
+  let versionID;
   try {
     const [createVersion] = await connection.execute(createVersionSQL, [versionName, versionNumber, projectID]);
-    createResponse = createVersion;
+    versionID = createVersion.insertId;
   } catch (error) {
     console.log('create version error: ', error);
     await connection.rollback();
-    return -1;
+    connection.release();
+    return {};
   }
-  if (selectResponse.length !== 0) {
-    const [fileResponse] = await connection.execute(latestFile, [selectResponse[0].versionID]);
-    if (fileResponse.length !== 0) {
-      try {
-        await connection.execute(defaultFile, [fileResponse[0].fileName, fileResponse[0].fileUrl, fileResponse[0].log, createResponse.insertId]);
-      } catch (error) {
-        console.log('cloning file error: ', error);
-        await connection.rollback();
-        return -1;
-      }
+  let fileID;
+  const [fileResponse] = await connection.execute(latestFile, [selectResponse[0].versionID]);
+  if (fileResponse.length !== 0) {
+    try {
+      console.log('file response [0]', fileResponse[0]);
+      const [createFile] = await connection.execute(defaultFile, [fileName, fileResponse[0].fileUrl, fileResponse[0].log, versionID]);
+      fileID = createFile.insertId;
+    } catch (error) {
+      console.log('cloning file error: ', error);
+      await connection.rollback();
+      connection.release();
+      return {};
     }
   }
   await connection.commit();
   connection.release();
-  return createResponse.insertId;
+  const returnObject = {
+    versionID,
+    versionName,
+    versionNumber,
+    editing: 0,
+    files: [{
+      fileID,
+      fileName,
+      fileURL: process.env.AWS_DISTRIBUTION_NAME + fileResponse[0].fileUrl,
+      log: fileResponse[0].log,
+      versionID,
+    }],
+    records: [],
+  };
+  return returnObject;
 };
 
 const updateVersionName = () => {
@@ -154,10 +175,28 @@ const getProejctVeriosn = () => {
   return '';
 };
 
+const updateWatchCount = async (projectID) => {
+  const sql = `
+  UPDATE project SET watch_count = watch_count + 1 WHERE project_id = ?;
+  `;
+  const [updateResponse] = await pool.execute(sql, [projectID]);
+  console.log('Update watch Response:', updateResponse);
+};
+
+const updateStarCount = async (projectID) => {
+  const sql = `
+  UPDATE project SET star_count = star_count + 1 WHERE project_id = ?;
+  `;
+  const [updateResponse] = await pool.execute(sql, [projectID]);
+  console.log('Update star Response:', updateResponse);
+};
+
 module.exports = {
   searchProjects,
   getAllProjects,
   createProjectVersion,
   getProejctVeriosn,
   projectDetials,
+  updateWatchCount,
+  updateStarCount,
 };

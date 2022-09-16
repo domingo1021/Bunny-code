@@ -155,6 +155,17 @@ const authResponse = (req, res) => res.status(200).json({
 
 const userIDResponse = (req, res) => res.status(200).json({ data: req.user.id });
 
+const getUserByName = async (req, res) => {
+  const { userName } = req.query;
+  if (!userName) {
+    return res.status(400).json({ msg: 'Lake of data.' });
+  }
+  const searchResponse = await User.getUserByName(userName);
+  return res.status(200).json({
+    data: searchResponse,
+  });
+};
+
 module.exports = {
   userSignUp,
   userSignIn,
@@ -162,4 +173,5 @@ module.exports = {
   createUserProject,
   authResponse,
   userIDResponse,
+  getUserByName,
 };
