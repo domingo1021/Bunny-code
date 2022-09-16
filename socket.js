@@ -52,8 +52,8 @@ io.on('connection', async (socket) => {
       return;
     }
     responseObject = await versionEditStatus(socket.user.id, projectObject.projectID, projectObject.versionID);
+    socket.versionID = projectObject.versionID;
     if (!responseObject.readOnly) {
-      socket.versionID = projectObject.versionID;
       if (Cache.ready) {
         await Cache.set(`${projectObject.versionID}`, `${socket.id}`);
       }
@@ -73,23 +73,29 @@ io.on('connection', async (socket) => {
       return;
     }
     const [killObject, userObject] = await editVersion(socket.user.id, projectObject.projectID, projectObject.versionID);
-    if (killObject.kill && projectObject.kill) {
-      const socketID = await Cache.get(`${projectObject.versionID}`);
-      // TODO: 將原本正在 edit 的 socket 刪掉 --> 從 Redis 裡面去撈 versionID : socketID;
-      console.log(`ready to kill a socket ${socketID}`);
-      io.sockets.sockets.forEach((ws) => {
-        if (ws.id === socketID) { ws.disconnect(true); }
+    if (killObject.kill) {
+      await Cache.executeIsolated(async (isolatedClient) => {
+        await isolatedClient.watch(`${projectObject.versionID}`);
+        const socketID = await Cache.get(`${projectObject.versionID}`);
+        if (socketID !== null) {
+          console.log(`ready to kill a socket ${socketID}`);
+          io.sockets.sockets.forEach((ws) => {
+            if (ws.id === socketID) { ws.disconnect(true); }
+          });
+          if (socketID === socket.id) {
+            console.log(`redis delete socket with id ${socketID}`);
+            isolatedClient.del(`${socket.versionID}`);
+          }
+        }
+        await Cache.set(`${projectObject.versionID}`, `${socket.id}`);
       });
-    }
-    if (Cache.ready) {
+    } else if (Cache.ready) {
       await Cache.set(`${projectObject.versionID}`, `${socket.id}`);
     }
     // TODO: 存入 Redis, 表示某個 socket 正在編輯程式碼
     // Redis SET key = versionID, value = socketID
+    console.log('status check responseObject: ', userObject);
     socket.emit('statusChecked', userObject);
-  });
-
-  socket.on('unEdit', async (versionID) => {
   });
 
   // for battle
@@ -150,22 +156,43 @@ io.on('connection', async (socket) => {
     });
   });
 
-  // socket.on('killMe', () => {
-  //   // console.log('ready to kill: ', socket.user.id);
-  //   // console.log('io.sockets: ', io.sockets);
-  //   // console.log('io.sockets.sockets: ', io.sockets.sockets);
-  //   // console.log('socket id: ', socket.id);
-  //   // io.sockets.sockets[socket.id].disconnect();
-  // });
+  socket.on('unEdit', async (emitObject) => {
+    console.log('socket version id: ', socket.versionID);
+    // TODO: check userID and project relationship, whether user have the auth of project.
+    if (Cache.ready) {
+      await Cache.executeIsolated(async (isolatedClient) => {
+        await isolatedClient.watch(`${socket.versionID}`);
+        const socketID = await isolatedClient.get(`${socket.versionID}`);
+        console.log('socketID: ', socketID, socket.id);
+        if (socketID !== null) {
+          if (socketID === socket.id) {
+            console.log(`DB update edit status of version-${socket.versionID}`);
+            await unEditing(socket.versionID);
+            console.log(`redis delete socket with id ${socketID}`);
+            isolatedClient.del(`${socket.versionID}`);
+          }
+        }
+      });
+    }
+  });
 
   socket.on('disconnect', async () => {
     if (socket.category === 'workspace' && socket.versionID !== undefined) {
+      // TODO: cahce 撈 versionID 的 socketID 去比對離開的人的 socket.id (如果相同則 unEditing)
       if (Cache.ready) {
-        console.log('redis delete ..');
-        await Cache.del(`${socket.versionID}`);
+        await Cache.executeIsolated(async (isolatedClient) => {
+          await isolatedClient.watch(`${socket.versionID}`);
+          const socketID = await isolatedClient.get(`${socket.versionID}`);
+          if (socketID !== null) {
+            if (socketID === socket.id) {
+              console.log(`DB update edit status of version-${socket.versionID}`);
+              await unEditing(socket.versionID);
+              console.log(`redis delete socket with id ${socketID}`);
+              isolatedClient.del(`${socket.versionID}`);
+            }
+          }
+        });
       }
-      console.log(`DB update edit status of version${socket.versionID}`);
-      await unEditing(socket.versionID);
     }
     // check if user in battle room, otherwise, update user project status to unediting.
     console.log(`#${socket.user.id} user disconnection.`);
