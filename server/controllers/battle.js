@@ -6,4 +6,23 @@ const createBattle = async (req, res) => {
   return res.status(200).send('battle created');
 };
 
-module.exports = { createBattle };
+const getAllBattles = async (req, res) => {
+  const battles = await Battle.getAllBattles();
+  const finishBattle = [];
+  const continueBattle = [];
+  battles.forEach((battle) => {
+    if (battle.isFinish) {
+      finishBattle.push(battle);
+    } else {
+      continueBattle.push(battle);
+    }
+  });
+  return res.status(200).json({
+    data: {
+      finish: finishBattle,
+      still: continueBattle,
+    },
+  });
+};
+
+module.exports = { createBattle, getAllBattles };

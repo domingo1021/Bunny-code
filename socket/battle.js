@@ -26,11 +26,18 @@ const queryBattler = async (battleID) => {
   return responseObject;
 };
 
-const createBattle = async (battleName, firstUserID, secondUserID, isPublic, competeTime) => {
+const createBattle = async (battleName, battleLevel, firstUserID, secondUserID) => {
+  const connection = await pool.getConnection();
+  const questionBattle = `
+  SELECT question_id as questionID FROM question WHERE question_level = ?;
+  `;
+  const [questionResult] = await connection.execute(questionBattle, battleLevel);
+  const { questionID } = questionResult[0];
   const battleSQL = `
-  INSERT INTO battle (battle_name, first_user_id, second_user_id, is_public, compete_at) 
-  VALUES (?, ?, ?, ?, ?)`;
-  const [createResult] = await pool.execute(battleSQL, [battleName, firstUserID, secondUserID, isPublic, competeTime]);
+  INSERT INTO battle (battle_name, first_user_id, second_user_id, question_id) 
+  VALUES (?, ?, ?, ?)`;
+  const [createResult] = await connection.execute(battleSQL, [battleName, firstUserID, secondUserID, questionID]);
+  connection.release();
   return { battleID: createResult.insertId };
 };
 

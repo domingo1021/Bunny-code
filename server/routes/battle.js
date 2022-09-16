@@ -1,8 +1,8 @@
 const express = require('express');
-const { createBattle } = require('../controllers/battle');
+const { createBattle, getAllBattles } = require('../controllers/battle');
 
 const router = express.Router();
 
-router.post('/battle', createBattle);
+router.route('/battle').get(getAllBattles).post(createBattle);
 
 module.exports = router;
