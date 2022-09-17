@@ -43,7 +43,7 @@ const uploadS3 = async (req, res, next) => {
         hasResult = true;
         folderRoutes = preparePrefix([process.env.S3_USER_IMAGE_FOLDER, `user_${user.id}`]);
         break;
-      case 'battle_code':
+      case 'battle_file':
         hasResult = true;
         folderRoutes = preparePrefix([process.env.S3_BATTLE_FOLDER, `battle_${battleID}`]);
         break;
