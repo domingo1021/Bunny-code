@@ -12,7 +12,7 @@ const preparePrefix = (prefixList) => {
 const uploadS3 = async (req, res, next) => {
   const { file, files } = req;
   const {
-    projectID, versionID, reqCategory,
+    projectID, versionID, reqCategory, battleID,
   } = req.body;
   const { user } = req;
 
@@ -42,6 +42,10 @@ const uploadS3 = async (req, res, next) => {
       case 'user_picture':
         hasResult = true;
         folderRoutes = preparePrefix([process.env.S3_USER_IMAGE_FOLDER, `user_${user.id}`]);
+        break;
+      case 'battle_code':
+        hasResult = true;
+        folderRoutes = preparePrefix([process.env.S3_BATTLE_FOLDER, `battle_${battleID}`]);
         break;
       default:
         break;
