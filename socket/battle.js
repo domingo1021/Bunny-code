@@ -1,8 +1,9 @@
+require('dotenv').config();
 const pool = require('../utils/rmdb');
 
 const queryBattler = async (battleID) => {
   const connection = await pool.getConnection();
-  const sqlFirst = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name, is_finish, q.answer as answer
+  const sqlFirst = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name, is_finish, q.question_name, q.question_url, q.answer as answer
   FROM battle as b, user as u, question as q
   WHERE battle_id = ? AND u.user_id = b.first_user_id AND q.question_id = b.question_id`;
   const sqlSecond = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name
@@ -20,6 +21,8 @@ const queryBattler = async (battleID) => {
     firstUserName: firstUser[0].user_name,
     secondUserName: secondUser[0].user_name,
     isFinish: firstUser[0].is_finish,
+    questionName: firstUser[0].question_name,
+    questionURL: process.env.AWS_DISTRIBUTION_NAME + firstUser[0].question_url,
     answer: firstUser[0].answer,
   };
   connection.release();
@@ -62,6 +65,19 @@ const acceptInvitation = async (battleID, userID) => {
   return updateResponse;
 };
 
+const battleFinish = async (battleID, userID) => {
+  const connection = await pool.getConnection();
+  const finishSQL = 'UPDATE battle SET winner_id = ?, is_finish = 1 WHERE battle_id = ?';
+  await connection.execute(finishSQL, [userID, battleID]);
+  const userSQL = 'SELECT user_name FROM user WHERE user_id = ?';
+  const [targetUser] = await connection.execute(userSQL, [userID]);
+  connection.release();
+  return {
+    winnerID: userID,
+    winnerName: targetUser[0].user_name,
+  };
+};
+
 module.exports = {
-  queryBattler, createBattle, getInvitations, acceptInvitation,
+  queryBattler, createBattle, getInvitations, acceptInvitation, battleFinish,
 };
