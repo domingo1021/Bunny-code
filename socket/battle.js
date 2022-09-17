@@ -2,17 +2,15 @@ const pool = require('../utils/rmdb');
 
 const queryBattler = async (battleID) => {
   const connection = await pool.getConnection();
-  const sqlFirst = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name
-  FROM battle as b 
-  LEFT JOIN user as u ON u.user_id = b.first_user_id 
-  WHERE battle_id = ?`;
+  const sqlFirst = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name, is_finish, q.answer as answer
+  FROM battle as b, user as u, question as q
+  WHERE battle_id = ? AND u.user_id = b.first_user_id AND q.question_id = b.question_id`;
   const sqlSecond = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name
-  FROM battle as b 
-  LEFT JOIN user as u ON u.user_id = b.second_user_id 
-  WHERE battle_id = ?
-  `;
-  const [firstUser] = await connection.execute(sqlFirst, battleID);
-  const [secondUser] = await connection.execute(sqlSecond, battleID);
+  FROM battle as b, user as u 
+  WHERE battle_id = ? AND u.user_id = b.second_user_id`;
+  const [firstUser] = await connection.execute(sqlFirst, [battleID]);
+  const [secondUser] = await connection.execute(sqlSecond, [battleID]);
+  console.log(firstUser, secondUser);
   // TODO: Fix: fix if there is no battle;
   const responseObject = {
     battleID,
@@ -21,6 +19,8 @@ const queryBattler = async (battleID) => {
     secondUserID: secondUser[0].second_user_id,
     firstUserName: firstUser[0].user_name,
     secondUserName: secondUser[0].user_name,
+    isFinish: firstUser[0].is_finish,
+    answer: firstUser[0].answer,
   };
   connection.release();
   return responseObject;
@@ -29,16 +29,18 @@ const queryBattler = async (battleID) => {
 const createBattle = async (battleName, battleLevel, firstUserID, secondUserID) => {
   const connection = await pool.getConnection();
   const questionBattle = `
-  SELECT question_id as questionID FROM question WHERE question_level = ?;
+  SELECT question_id as questionID, answer FROM question WHERE question_level = ?;
   `;
   const [questionResult] = await connection.execute(questionBattle, battleLevel);
-  const { questionID } = questionResult[0];
+  console.log('questionResult: ', questionResult);
+  const { questionID, answer } = questionResult[0];
+  console.log(battleName, firstUserID, secondUserID, questionID);
   const battleSQL = `
   INSERT INTO battle (battle_name, first_user_id, second_user_id, question_id) 
   VALUES (?, ?, ?, ?)`;
   const [createResult] = await connection.execute(battleSQL, [battleName, firstUserID, secondUserID, questionID]);
   connection.release();
-  return { battleID: createResult.insertId };
+  return { battleID: createResult.insertId, answer };
 };
 
 const getInvitations = async (userID) => {

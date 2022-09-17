@@ -147,6 +147,13 @@ io.on('connection', async (socket) => {
     // TODO: emit socket id to all user (get redis hash key);
   });
 
+  socket.on('test', async () => {
+    console.log('test for null hgetall');
+    const redisResponse = await Cache.HGETALL('11');
+    console.log(redisResponse == null);
+    console.log(redisResponse);
+  });
+
   socket.on('acceptBattle', async (emitObject) => {
     const { socketID, firstUserID } = emitObject;
     const battleObject = await Cache.HGETALL(`${socketID}`);
@@ -161,18 +168,48 @@ io.on('connection', async (socket) => {
     }
     const battlePayload = JSON.parse(battleObject[`${firstUserID}`]);
     // TODO: Create a battle in MySQL.
-    const { battleID } = await createBattle(battlePayload.name, battlePayload.level, battlePayload.firstUserID, socket.user.id);
-    socket.emit('battleCreated', {
-      battleID,
-    });
-  // TODO: Update redis data --> wait for two battlers to ready
-  // TODO: Emit to user message to go to battle (send with battle id, 讓後端直接 push 路徑到 Battle 頁面);
+    const { battleID, answer } = await createBattle(battlePayload.name, battlePayload.level, battlePayload.firstUserID, socket.user.id);
+    // TODO: Update redis data --> wait for two battlers to ready
+    // TODO: set hash: key- battleID, field - user_1, user_2, answer, and value accordingly.
+    await Cache.HDEL(`${socketID}`, `${firstUserID}`);
+    Cache.HSET;
+    const cacheBattleResult = await Cache.HSET([`${battleID}`, `${firstUserID}`, '0'], [`${battleID}`, `${socket.user.id}`, '0'], [`${battleID}`, 'answer', answer]);
+    if (cacheBattleResult) {
+      io.to(socketID).emit('battleCreated', {
+        battleID,
+      });
+      socket.emit('battleCreated', {
+        battleID,
+      });
+    }
+    // TODO: Emit to user message to go to battle (send with battle id, 讓後端直接 push 路徑到 Battle 頁面);
   });
 
-  socket.on('userReady', () => {
-  // TODO: Send ready state to redis hash data where the battle id live in.
-  // TODO: If all user are ready, then emit to socket room.
-  // TODO: Start the game after five seconds.
+  socket.on('setReady', async (emitObject) => {
+  // { battleID, currentUserID, anotherUserID }
+    if (emitObject.currentUserID !== socket.user.id) {
+      return;
+    }
+    // TODO: Send ready state to redis hash data where the battle id live in.
+    const setReady = await Cache.HSET(`${emitObject.battleID}`, `${emitObject.currentUserID}`, '1');
+    // if (!setReady) {
+    //   socket.emit('readyFailed', {
+    //     failedUserID: socket.user.id,
+    //     reason: 'Battle is over or authentication failed.',
+    //   });
+    // }
+    const battleObject = await Cache.hGetAll(`${emitObject.battleID}`);
+    socket.emit('userReady', {
+      readyUserID: socket.user.id,
+    });
+    socket.to(`${emitObject.battleID}`).emit('userReady', {
+      readyUserID: socket.user.id,
+    });
+
+    if (battleObject[`${emitObject.currentUserID}`] === '1' && battleObject[`${emitObject.anotherUserID}`] === '1') {
+      socket.to(`${emitObject.battleID}`).emit('battleStart');
+      socket.emit('battleStart');
+    }
   });
 
   socket.on('checkAnswer', () => {
@@ -185,19 +222,31 @@ io.on('connection', async (socket) => {
 
   // for battle
   socket.on('queryBattler', async (queryObject) => {
+    // input: battleID
     console.log(`user in, with queryObject: ${JSON.stringify(queryObject)}`);
-    socket.join(queryObject.battleID);
-    const battleResponse = await queryBattler(queryObject.battleID);
+    // user join battle socket room.
     let userCategory = CLIENT_CATEGORY.visitor;
+    const battleResponse = await queryBattler(queryObject.battleID);
     if ([battleResponse.firstUserID, battleResponse.secondUserID].includes(socket.user.id)) {
       userCategory = CLIENT_CATEGORY.self;
     }
-    // assign battle room
+    socket.join(queryObject.battleID);
     socket.battleID = queryObject.battleID;
+    const battleObject = await Cache.HGETALL(`${queryObject.battleID}`);
+    if (Object.keys(battleObject).length === 0) {
+      const { firstUserID, secondUserID, answer } = battleResponse;
+      const inputObject = {};
+      inputObject[firstUserID] = '0';
+      inputObject[secondUserID] = '0';
+      inputObject.answer = answer;
+      await Cache.HSET(`${battleResponse.battleID}`, inputObject);
+    }
     socket.emit('returnBattler', {
       battleResponse,
       userID: socket.user.id,
       category: userCategory,
+      firstUserReady: battleObject[`${battleResponse.firstUserID}`],
+      secondUserReady: battleObject[`${battleResponse.secondUserID}`],
     });
     console.log('prepare to send room msg');
     socket.to(queryObject.battleID).emit('in', `user #${socket.user.id} come in.`);
