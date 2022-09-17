@@ -272,9 +272,9 @@ io.on('connection', async (socket) => {
   });
 
   socket.on('compile', async (queryObject) => {
-    // const compilerResult = await compile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes);
     // TODO: 對照 compile result & answer
-    const compilerResult = '6';
+    const compilerResult = await compile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes);
+    // const compilerResult = '6';
     const answer = await Cache.hGet(`${socket.battleID}`, 'answer');
     socket.to(socket.battleID).emit(
       'compileDone',

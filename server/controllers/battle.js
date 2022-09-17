@@ -7,6 +7,7 @@ const createBattle = async (req, res) => {
 };
 
 const getAllBattles = async (req, res) => {
+  // TODO: for finish battle, where winner_url !== null
   const battles = await Battle.getAllBattles();
   const finishBattle = [];
   const continueBattle = [];
