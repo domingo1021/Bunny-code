@@ -100,12 +100,14 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
   const getVersionNumber = `
   SELECT  v.version_id as versionID, v.version_number as versionNumber
   FROM version as v 
+  WHERE project_id = ?
   ORDER BY v.version_id DESC
   LIMIT 1;`;
   const createVersionSQL = 'INSERT INTO version (version_name, version_number, project_id) VALUES (?, ?, ?);';
   const latestFile = `
   SELECT file_name as fileName, file_url as fileUrl, log 
-  FROM file 
+  FROM file
+  ORDER BY file_id DESC
   WHERE version_id = ? AND deleted = 0;`;
   const defaultFile = `
   INSERT INTO file (file_name, file_url, log, version_id) VALUES (?, ?, ?, ?)`;
@@ -179,16 +181,14 @@ const updateWatchCount = async (projectID) => {
   const sql = `
   UPDATE project SET watch_count = watch_count + 1 WHERE project_id = ?;
   `;
-  const [updateResponse] = await pool.execute(sql, [projectID]);
-  console.log('Update watch Response:', updateResponse);
+  await pool.execute(sql, [projectID]);
 };
 
 const updateStarCount = async (projectID) => {
   const sql = `
   UPDATE project SET star_count = star_count + 1 WHERE project_id = ?;
   `;
-  const [updateResponse] = await pool.execute(sql, [projectID]);
-  console.log('Update star Response:', updateResponse);
+  await pool.execute(sql, [projectID]);
 };
 
 module.exports = {

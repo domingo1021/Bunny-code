@@ -1,11 +1,24 @@
 require('dotenv').config();
 const Compiler = require('../models/compiler');
+const Battle = require('../models/battle');
 const pool = require('../../utils/rmdb');
 const timeDB = require('../../utils/timeSeriesDB');
 const { compile } = require('../services/service');
 
 const { INFLUX_ORG, INFLUX_BUCKET } = process.env;
 const KEY_MANAGE = ['up', 'down'];
+
+const writeBattleFile = async (req, res) => {
+  const { battleID } = req.body;
+  const { s3Results } = req;
+  try {
+    await Battle.writeBattleFile(battleID, `/${s3Results[0].key}`);
+  } catch (error) {
+    console.log('write battle file error: ', error);
+    return res.status(500).json({ msg: 'Write battle into database error, please upload again' });
+  }
+  return res.status(200).send({ data: 'File uploaded !' });
+};
 
 const getFiles = async (req, res) => {
   const { versionID } = req.body;
@@ -22,7 +35,7 @@ const writeFile = async (req, res) => {
   const connection = await pool.getConnection();
   try {
     await Promise.all(s3Results.map(async (result, index) => {
-      await Compiler.writeFile(filenames[index], result.key, log, versionID);
+      await Compiler.writeFile(filenames[index], `/${result.key}`, log, versionID);
     }));
   } catch (error) {
     connection.release();
@@ -146,5 +159,5 @@ const runCompiler = async (req, res) => {
 };
 
 module.exports = {
-  runCompiler, getFiles, writeFile, writeRecord, queryRecord,
+  runCompiler, getFiles, writeFile, writeRecord, queryRecord, writeBattleFile,
 };

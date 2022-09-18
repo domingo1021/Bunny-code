@@ -137,6 +137,18 @@ const rolePermissionTable = `
 const permissionTable = `
 
 `;
+
+const question = `
+  CREATE TABLE IF NOT EXISTS question(
+    question_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    question_name VARCHAR(30) NOT NULL,
+    question_url VARCHAR(100) NOT NULL,
+    question_level TINYINT(1) NOT NULL,
+    answer VARCHAR(50) NOT NULL,
+    PRIMARY KEY question_id
+  );
+`;
+
 async function createAllTable() {
   try {
     await pool.execute(userTable);
