@@ -6,15 +6,27 @@ const createBattle = async () => {
 };
 
 const getAllBattles = async () => {
-  const battleSQL = `
+  const userOneSQL = `
   SELECT battle_id as battleID, battle_name as battleName, watch_count as watchCount,
-  first_user_id as firstUserID, second_user_id as secondUserID, winner_id as winnerID, is_finish as isFinish
-  FROM battle
-  WHERE deleted = 0
+  first_user_id as firstUserID, is_finish as isFinish, 
+  u.user_name as firstUserName, u.level as firstUserLevel, u.picture as firstUserPicture
+  FROM battle as b, user as u
+  WHERE deleted = 0 AND u.user_id = b.first_user_id
   ORDER BY watch_count DESC;
   `;
-  const [battleResults] = await pool.execute(battleSQL);
-  return battleResults;
+  const userTwoSQL = `
+  SELECT battle_id as battleID, battle_name as battleName, watch_count as watchCount,
+  first_user_id as firstUserID, winner_id as winnerID, winner_url as winnerURL, is_finish as isFinish, 
+  u.user_name as secondUserName, u.level as secondUserLevel, u.picture as secondUserPicture
+  FROM battle as b, user as u
+  WHERE deleted = 0 AND u.user_id = b.second_user_id
+  ORDER BY watch_count DESC;
+  `;
+  const connection = await pool.getConnection();
+  const [battleOne] = await connection.execute(userOneSQL);
+  const [battleTwo] = await connection.execute(userTwoSQL);
+  connection.release();
+  return [battleOne, battleTwo];
 };
 
 const writeBattleFile = async (battleID, winnerURL) => {

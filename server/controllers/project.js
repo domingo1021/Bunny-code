@@ -67,7 +67,9 @@ const getProjects = async (req, res) => {
         return res.status(400).json({ msg: 'Bad request, please provide proejct id.' });
       }
       try {
+        console.log(projectName);
         responseObject = await projectDetails(projectName);
+        console.log(responseObject);
       } catch (error) {
         return res.status(error.status).json({ msg: error.msg });
       }

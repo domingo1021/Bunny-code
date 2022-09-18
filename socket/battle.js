@@ -78,6 +78,13 @@ const battleFinish = async (battleID, userID) => {
   };
 };
 
+const addBattleWatch = async (battleID) => {
+  const updateSQL = `
+  UPDATE battle SET watch_count = watch_count + 1 WHERE battle_id = ?;
+  `;
+  await pool.execute(updateSQL, [battleID]);
+};
+
 module.exports = {
-  queryBattler, createBattle, getInvitations, acceptInvitation, battleFinish,
+  queryBattler, createBattle, getInvitations, acceptInvitation, battleFinish, addBattleWatch,
 };

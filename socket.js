@@ -3,7 +3,7 @@ const httpServer = require('./app');
 const { jwtAuthenticate, AuthenticationError } = require('./server/services/auth');
 const { authorization, CLIENT_CATEGORY } = require('./socket/util');
 const {
-  queryBattler, getInvitations, createBattle, battleFinish,
+  queryBattler, getInvitations, createBattle, battleFinish, addBattleWatch,
 } = require('./socket/battle');
 const { versionEditStatus, editVersion, unEditing } = require('./socket/editor');
 const { getUserByName } = require('./socket/user');
@@ -237,14 +237,17 @@ io.on('connection', async (socket) => {
     socket.battleID = `battle-${queryObject.battleID}`;
     socket.join(socket.battleID);
     let battleObject = await Cache.HGETALL(`${socket.battleID}`);
+    const { firstUserID, secondUserID, answer } = battleResponse;
     if (Object.keys(battleObject).length === 0) {
-      const { firstUserID, secondUserID, answer } = battleResponse;
       const cacheObject = {};
       cacheObject[firstUserID] = JSON.stringify({ ready: '0', codes: '' });
       cacheObject[secondUserID] = JSON.stringify({ ready: '0', codes: '' });
       cacheObject.answer = answer;
       await Cache.HSET(`${socket.battleID}`, cacheObject);
       battleObject = cacheObject;
+    }
+    if (![firstUserID, secondUserID].includes(socket.user.id)) {
+      await addBattleWatch(queryObject.battleID);
     }
     socket.emit('returnBattler', {
       battleResponse,
