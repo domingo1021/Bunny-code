@@ -17,4 +17,11 @@ const getAllBattles = async () => {
   return battleResults;
 };
 
-module.exports = { createBattle, getAllBattles };
+const writeBattleFile = async (battleID, winnerURL) => {
+  const writeFileSQL = `
+    UPDATE battle SET winner_url = ? WHERE battle_id = ?;
+  `;
+  await pool.execute(writeFileSQL, [battleID, winnerURL]);
+};
+
+module.exports = { createBattle, getAllBattles, writeBattleFile };
