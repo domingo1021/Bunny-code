@@ -173,8 +173,8 @@ io.on('connection', async (socket) => {
     // TODO: set hash: key- battleID, field - user_1, user_2, answer, and value accordingly.
     await Cache.HDEL(`${socketID}`, `${firstUserID}`);
     const cacheObject = {};
-    cacheObject[`${battlePayload.firstUserID}`] = '0';
-    cacheObject[`${socket.user.id}`] = '0';
+    cacheObject[`${battlePayload.firstUserID}`] = JSON.stringify({ ready: 0, codes: '' });
+    cacheObject[`${socket.user.id}`] = JSON.stringify({ ready: 0, codes: '' });
     cacheObject.answer = answer;
     const cacheBattleResult = await Cache.HSET(`${socket.battleID}`, cacheObject);
     if (cacheBattleResult) {
@@ -194,14 +194,13 @@ io.on('connection', async (socket) => {
       return;
     }
     // TODO: Send ready state to redis hash data where the battle id live in.
-    await Cache.HSET(`${socket.battleID}`, `${emitObject.currentUserID}`, '1');
-    // if (!setReady) {
-    //   socket.emit('readyFailed', {
-    //     failedUserID: socket.user.id,
-    //     reason: 'Battle is over or authentication failed.',
-    //   });
-    // }
-    const battleObject = await Cache.hGetAll(`${socket.battleID}`);
+    const battlerInfo = await Cache.HGET(`${socket.battleID}`, `${emitObject.currentUserID}`);
+    if (battlerInfo === null) {
+      return;
+    }
+    const battlerObject = JSON.parse(battlerInfo);
+    battlerObject.ready = '1';
+    await Cache.HSET(`${socket.battleID}`, `${emitObject.currentUserID}`, JSON.stringify(battlerObject));
     socket.emit('userReady', {
       readyUserID: socket.user.id,
     });
@@ -209,7 +208,8 @@ io.on('connection', async (socket) => {
       readyUserID: socket.user.id,
     });
 
-    if (battleObject[`${emitObject.currentUserID}`] === '1' && battleObject[`${emitObject.anotherUserID}`] === '1') {
+    const allBattler = await Cache.hGetAll(`${socket.battleID}`);
+    if (JSON.parse(allBattler[`${emitObject.currentUserID}`]).ready === '1' && JSON.parse(allBattler[`${emitObject.anotherUserID}`]).ready === '1') {
       socket.to(`${socket.battleID}`).emit('battleStart');
       socket.emit('battleStart');
     }
@@ -240,8 +240,8 @@ io.on('connection', async (socket) => {
     if (Object.keys(battleObject).length === 0) {
       const { firstUserID, secondUserID, answer } = battleResponse;
       const cacheObject = {};
-      cacheObject[firstUserID] = '0';
-      cacheObject[secondUserID] = '0';
+      cacheObject[firstUserID] = JSON.stringify({ ready: '0', codes: '' });
+      cacheObject[secondUserID] = JSON.stringify({ ready: '0', codes: '' });
       cacheObject.answer = answer;
       await Cache.HSET(`${socket.battleID}`, cacheObject);
       battleObject = cacheObject;
@@ -250,14 +250,21 @@ io.on('connection', async (socket) => {
       battleResponse,
       userID: socket.user.id,
       category: userCategory,
-      firstUserReady: battleObject[`${battleResponse.firstUserID}`],
-      secondUserReady: battleObject[`${battleResponse.secondUserID}`],
+      firstUserReady: JSON.parse(battleObject[`${battleResponse.firstUserID}`]).ready,
+      secondUserReady: JSON.parse(battleObject[`${battleResponse.secondUserID}`]).ready,
     });
     console.log('prepare to send room msg');
     socket.to(socket.battleID).emit('in', `user #${socket.user.id} come in.`);
   });
 
-  socket.on('newCodes', (recordObject) => {
+  socket.on('newCodes', async (recordObject) => {
+    await Cache.executeIsolated(async (isolatedClient) => {
+      await isolatedClient.watch(socket.battleID);
+      const battlerInfo = await isolatedClient.HGET(`${socket.battleID}`, `${socket.user.id}`);
+      const battlerObject = JSON.parse(battlerInfo);
+      battlerObject.codes = recordObject.newCodes;
+      await isolatedClient.HSET(`${socket.battleID}`, `${socket.user.id}`, JSON.stringify(battlerObject));
+    });
     socket.to(socket.battleID).emit('newCodes', recordObject);
   });
 
@@ -273,9 +280,9 @@ io.on('connection', async (socket) => {
 
   socket.on('compile', async (queryObject) => {
     // TODO: 對照 compile result & answer
+    const answer = await Cache.hGet(`${socket.battleID}`, 'answer');
     const compilerResult = await compile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes);
     // const compilerResult = '6';
-    const answer = await Cache.hGet(`${socket.battleID}`, 'answer');
     socket.to(socket.battleID).emit(
       'compileDone',
       {
@@ -287,7 +294,7 @@ io.on('connection', async (socket) => {
       battlerNumber: queryObject.battlerNumber,
       compilerResult,
     });
-    if (answer !== compilerResult) {
+    if (JSON.stringify(JSON.parse(answer)) !== JSON.stringify(JSON.parse(compilerResult))) {
       return;
     }
     console.log(`${socket.user.name} win the game`);
@@ -333,7 +340,14 @@ io.on('connection', async (socket) => {
           await isolatedClient.watch(battleID);
           const battleObject = await isolatedClient.HGETALL(socket.battleID);
           const userIDs = Object.keys(battleObject);
-          console.log(userIDs, socket.user.id);
+          const userValues = Object.values(battleObject);
+          for (let i = 0; i < userValues.length; i += 1) {
+            const { ready } = JSON.parse(userValues[i]);
+            console.log('ready: ', ready);
+            if (ready === '0') {
+              return;
+            }
+          }
           if (userIDs.includes(`${socket.user.id}`)) {
             userIDs.splice(userIDs.indexOf(`${socket.user.id}`), 1);
             const winnerUser = await battleFinish(battleID, userIDs[0]);
