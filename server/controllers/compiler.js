@@ -12,7 +12,7 @@ const writeBattleFile = async (req, res) => {
   const { battleID } = req.body;
   const { s3Results } = req;
   try {
-    await Battle.writeBattleFile(battleID, s3Results[0].key);
+    await Battle.writeBattleFile(battleID, `/${s3Results[0].key}`);
   } catch (error) {
     console.log('write battle file error: ', error);
     return res.status(500).json({ msg: 'Write battle into database error, please upload again' });
@@ -35,7 +35,7 @@ const writeFile = async (req, res) => {
   const connection = await pool.getConnection();
   try {
     await Promise.all(s3Results.map(async (result, index) => {
-      await Compiler.writeFile(filenames[index], result.key, log, versionID);
+      await Compiler.writeFile(filenames[index], `/${result.key}`, log, versionID);
     }));
   } catch (error) {
     connection.release();
