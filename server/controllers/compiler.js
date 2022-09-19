@@ -40,9 +40,10 @@ const writeFile = async (req, res) => {
   } catch (error) {
     connection.release();
     console.log(error);
-    return res.send('error occur');
+    return res.status(500).send('error occur');
   }
-  return res.send('success');
+  return res.stauts(201).json({ data: `${process.env.AWS_DISTRIBUTION_NAME}/${s3Results[0].key}` });
+  // return res.send('success');
 };
 
 const writeRecord = async (req, res) => {
