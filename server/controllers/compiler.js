@@ -71,7 +71,7 @@ const writeRecord = async (req, res) => {
     if (KEY_MANAGE.includes(data.action)) {
       return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
     } if (data.code === '"') {
-      return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code="\""  ${data.timestamp}`;
+      return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code="  ${data.timestamp}`;
     }
     return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
   });
