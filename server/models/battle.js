@@ -36,4 +36,6 @@ const writeBattleFile = async (battleID, winnerURL) => {
   await pool.execute(writeFileSQL, [winnerURL, battleID]);
 };
 
-module.exports = { createBattle, getAllBattles, writeBattleFile };
+module.exports = {
+  createBattle, getAllBattles, writeBattleFile,
+};

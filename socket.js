@@ -3,7 +3,7 @@ const httpServer = require('./app');
 const { jwtAuthenticate, AuthenticationError } = require('./server/services/auth');
 const { authorization, CLIENT_CATEGORY } = require('./socket/util');
 const {
-  queryBattler, getInvitations, createBattle, battleFinish, addBattleWatch,
+  queryBattler, getInvitations, createBattle, battleFinish, addBattleWatch, getWinnerData,
 } = require('./socket/battle');
 const { versionEditStatus, editVersion, unEditing } = require('./socket/editor');
 const { getUserByName } = require('./socket/user');
@@ -314,6 +314,14 @@ io.on('connection', async (socket) => {
       winnerName: socket.user.name,
       reason: 'For just compiled with the right answer',
     });
+  });
+
+  socket.on('getWinnerData', async (queryObject) => {
+    if (!queryObject.battleID) {
+      return;
+    }
+    const winnerData = await getWinnerData(queryObject.battleID);
+    socket.emit('winnerData', winnerData);
   });
 
   socket.on('disconnect', async () => {
