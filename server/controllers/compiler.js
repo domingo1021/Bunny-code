@@ -68,9 +68,10 @@ const writeRecord = async (req, res) => {
 
   const writeApi = timeDB.getWriteApi(INFLUX_ORG, INFLUX_BUCKET, 'ns');
   const points = batchData.map((data) => {
-    if (KEY_MANAGE.includes(data.action)) {
-      return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
-    } if (data.code === '"') {
+    // if (KEY_MANAGE.includes(data.action)) {
+    //   return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
+    // }
+    if (data.code === '"') {
       return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code=""""  ${data.timestamp}`;
     }
     return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
