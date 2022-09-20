@@ -30,11 +30,12 @@ const queryBattler = async (battleID) => {
 };
 
 const createBattle = async (battleName, battleLevel, firstUserID, secondUserID) => {
-  const connection = await pool.getConnection();
+  console.log(battleName, battleLevel, firstUserID, secondUserID);
+	const connection = await pool.getConnection();
   const questionBattle = `
   SELECT question_id as questionID, answer FROM question WHERE question_level = ?;
   `;
-  const [questionResult] = await connection.execute(questionBattle, battleLevel);
+  const [questionResult] = await connection.execute(questionBattle, [battleLevel]);
   console.log('questionResult: ', questionResult);
   const { questionID, answer } = questionResult[0];
   console.log(battleName, firstUserID, secondUserID, questionID);
@@ -85,6 +86,30 @@ const addBattleWatch = async (battleID) => {
   await pool.execute(updateSQL, [battleID]);
 };
 
+const getWinnerData = async (battleID) => {
+  const winnerSQL = `
+    SELECT b.battle_name as battleName, b.watch_count as watchCount, b.winner_id as winnerID, b.winner_url as winnerURL, 
+    b.question_id as questionID, q.question_name as questionName, q.question_url as questionURL, q.question_level as level, q.answer,
+    u.user_name as userName, u.email, u.profile as profile, u.picture, u.level as userLevel
+    FROM battle as b, question as q, user as u
+    WHERE b.battle_id = ? AND b.winner_id = u.user_id AND b.question_id = q.question_id;
+  `;
+  const [winnerObject] = await pool.execute(winnerSQL, [battleID]);
+  if (winnerObject.length === 0) {
+    return {};
+  }
+  winnerObject[0].winnerURL = process.env.AWS_DISTRIBUTION_NAME + winnerObject[0].winnerURL;
+  winnerObject[0].questionURL = process.env.AWS_DISTRIBUTION_NAME + winnerObject[0].questionURL;
+  winnerObject[0].picture = process.env.AWS_DISTRIBUTION_NAME + winnerObject[0].picture;
+  return winnerObject[0];
+};
+
 module.exports = {
-  queryBattler, createBattle, getInvitations, acceptInvitation, battleFinish, addBattleWatch,
+  queryBattler,
+  createBattle,
+  getInvitations,
+  acceptInvitation,
+  battleFinish,
+  addBattleWatch,
+  getWinnerData,
 };

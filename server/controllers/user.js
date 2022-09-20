@@ -107,7 +107,7 @@ const getUserProjects = async (req, res) => {
   } catch (error) {
     userPayload = { id: -1 };
   }
-  console.log(userPayload);
+  console.log(userPayload, userID);
   let projects;
   try {
     if (userID === userPayload.id) {

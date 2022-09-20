@@ -3,7 +3,7 @@ const httpServer = require('./app');
 const { jwtAuthenticate, AuthenticationError } = require('./server/services/auth');
 const { authorization, CLIENT_CATEGORY } = require('./socket/util');
 const {
-  queryBattler, getInvitations, createBattle, battleFinish, addBattleWatch,
+  queryBattler, getInvitations, createBattle, battleFinish, addBattleWatch, getWinnerData,
 } = require('./socket/battle');
 const { versionEditStatus, editVersion, unEditing } = require('./socket/editor');
 const { getUserByName } = require('./socket/user');
@@ -284,7 +284,7 @@ io.on('connection', async (socket) => {
   socket.on('compile', async (queryObject) => {
     // TODO: 對照 compile result & answer
     const answer = await Cache.hGet(`${socket.battleID}`, 'answer');
-    const compilerResult = await compile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes);
+    let compilerResult = await compile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes);
     // const compilerResult = '6';
     socket.to(socket.battleID).emit(
       'compileDone',
@@ -297,7 +297,19 @@ io.on('connection', async (socket) => {
       battlerNumber: queryObject.battlerNumber,
       compilerResult,
     });
-    if (JSON.stringify(JSON.parse(answer)) !== JSON.stringify(JSON.parse(compilerResult))) {
+    // TODO: split answer with \n
+    // TODO: check answer, for object, user JSON.stringify & parse to get unique format.
+    compilerResult = compilerResult.split('\n');
+    compilerResult.pop();
+    compilerResult = compilerResult.reduce((prev, curr) => {
+      prev += curr;
+      return prev;
+    }, '');
+    if (answer.includes('[') || answer.includes('{')) {
+      if (JSON.stringify(JSON.parse(answer)) !== JSON.stringify(JSON.parse(compilerResult))) {
+        return;
+      }
+    } else if (answer !== compilerResult) {
       return;
     }
     console.log(`${socket.user.name} win the game`);
@@ -314,6 +326,14 @@ io.on('connection', async (socket) => {
       winnerName: socket.user.name,
       reason: 'For just compiled with the right answer',
     });
+  });
+
+  socket.on('getWinnerData', async (queryObject) => {
+    if (!queryObject.battleID) {
+      return;
+    }
+    const winnerData = await getWinnerData(queryObject.battleID);
+    socket.emit('winnerData', winnerData);
   });
 
   socket.on('disconnect', async () => {

@@ -16,7 +16,7 @@ const getAllBattles = async () => {
   `;
   const userTwoSQL = `
   SELECT battle_id as battleID, battle_name as battleName, watch_count as watchCount,
-  first_user_id as firstUserID, winner_id as winnerID, winner_url as winnerURL, is_finish as isFinish, 
+  second_user_id as secondUserID, winner_id as winnerID, winner_url as winnerURL, is_finish as isFinish, 
   u.user_name as secondUserName, u.level as secondUserLevel, u.picture as secondUserPicture
   FROM battle as b, user as u
   WHERE deleted = 0 AND u.user_id = b.second_user_id
@@ -36,4 +36,6 @@ const writeBattleFile = async (battleID, winnerURL) => {
   await pool.execute(writeFileSQL, [winnerURL, battleID]);
 };
 
-module.exports = { createBattle, getAllBattles, writeBattleFile };
+module.exports = {
+  createBattle, getAllBattles, writeBattleFile,
+};

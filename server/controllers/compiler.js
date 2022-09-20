@@ -40,9 +40,10 @@ const writeFile = async (req, res) => {
   } catch (error) {
     connection.release();
     console.log(error);
-    return res.send('error occur');
+    return res.status(500).send('error occur');
   }
-  return res.send('success');
+  return res.status(201).json({ data: `${process.env.AWS_DISTRIBUTION_NAME}/${s3Results[0].key}` });
+  // return res.send('success');
 };
 
 const writeRecord = async (req, res) => {
@@ -69,6 +70,8 @@ const writeRecord = async (req, res) => {
   const points = batchData.map((data) => {
     if (KEY_MANAGE.includes(data.action)) {
       return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
+    } if (data.code === '"') {
+      return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code=""""  ${data.timestamp}`;
     }
     return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
   });

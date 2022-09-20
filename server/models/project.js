@@ -107,8 +107,9 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
   const latestFile = `
   SELECT file_name as fileName, file_url as fileUrl, log 
   FROM file
+  WHERE version_id = ? AND deleted = 0
   ORDER BY file_id DESC
-  WHERE version_id = ? AND deleted = 0;`;
+  `;
   const defaultFile = `
   INSERT INTO file (file_name, file_url, log, version_id) VALUES (?, ?, ?, ?)`;
   const [selectResponse] = await connection.execute(getVersionNumber, [projectID]);
@@ -128,6 +129,7 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
     connection.release();
     return {};
   }
+	console.log(selectResponse[0].versionID);
   let fileID;
   const [fileResponse] = await connection.execute(latestFile, [selectResponse[0].versionID]);
   if (fileResponse.length !== 0) {
