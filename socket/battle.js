@@ -30,11 +30,12 @@ const queryBattler = async (battleID) => {
 };
 
 const createBattle = async (battleName, battleLevel, firstUserID, secondUserID) => {
-  const connection = await pool.getConnection();
+  console.log(battleName, battleLevel, firstUserID, secondUserID);
+	const connection = await pool.getConnection();
   const questionBattle = `
   SELECT question_id as questionID, answer FROM question WHERE question_level = ?;
   `;
-  const [questionResult] = await connection.execute(questionBattle, battleLevel);
+  const [questionResult] = await connection.execute(questionBattle, [battleLevel]);
   console.log('questionResult: ', questionResult);
   const { questionID, answer } = questionResult[0];
   console.log(battleName, firstUserID, secondUserID, questionID);
