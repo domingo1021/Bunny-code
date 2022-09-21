@@ -73,6 +73,8 @@ const writeRecord = async (req, res) => {
     // }
     if (data.code === '"') {
       return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code=""""  ${data.timestamp}`;
+    } if (data.code === '""') {
+      return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code=""""""  ${data.timestamp}`;
     }
     return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code="${data.code}"  ${data.timestamp}`;
   });
