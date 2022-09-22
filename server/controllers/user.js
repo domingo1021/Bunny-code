@@ -107,13 +107,16 @@ const getUserProjects = async (req, res) => {
   } catch (error) {
     userPayload = { id: -1 };
   }
-  console.log(userPayload, userID);
+  let { keyword } = req.query;
+  if (!keyword) {
+    keyword = '';
+  }
   let projects;
   try {
     if (userID === userPayload.id) {
-      projects = await User.getUserProjects(userID, 'all');
+      projects = await User.getUserProjects(userID, 'all', keyword);
     } else {
-      projects = await User.getUserProjects(userID, 'public');
+      projects = await User.getUserProjects(userID, 'public', keyword);
     }
   } catch (error) {
     console.log(error);

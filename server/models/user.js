@@ -40,21 +40,23 @@ const getUserDetail = async (email, roleId) => {
   }
 };
 
-const getUserProjects = async (userID, category) => {
+const getUserProjects = async (userID, category, keyword) => {
   let sql;
   if (category === 'all') {
     sql = `SELECT project_id as projectID, project_name as projectName, project_description as projectDescription,
     watch_count as watchCount, star_count as starCount, is_public as isPublic, create_at as createAt 
     FROM project
-    WHERE user_id = ? AND deleted = 0
+    WHERE user_id = ? AND deleted = 0 AND (project_name LIKE ? OR project_description LIKE ? )
+    ORDER BY create_at DESC;`;
+  } else {
+    sql = `SELECT project_id as projectID, project_name as projectName, project_description as projectDescription,
+    watch_count as watchCount, star_count as starCount, is_public as isPublic, create_at as createAt 
+    FROM project
+    WHERE user_id = ? AND deleted = 0 AND is_public = 1 AND (project_name LIKE ? OR project_description LIKE ? )
     ORDER BY create_at DESC;`;
   }
-  sql = `SELECT project_id as projectID, project_name as projectName, project_description as projectDescription,
-  watch_count as watchCount, star_count as starCount, is_public as isPublic, create_at as createAt 
-  FROM project
-  WHERE user_id = ? AND deleted = 0 AND is_public = 1
-  ORDER BY create_at DESC;`;
-  const [selectResponse] = await pool.execute(sql, [userID]);
+  const like = `%${keyword}%`;
+  const [selectResponse] = await pool.execute(sql, [userID, like, like]);
   return selectResponse;
 };
 
