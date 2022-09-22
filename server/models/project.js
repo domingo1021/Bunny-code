@@ -70,7 +70,7 @@ const searchProjects = async (keywords, paging) => {
   const limitCount = paging * 6;
   const [keywordProducts] = await connection.query(sql, [likeString, likeString, likeString, 6, limitCount]);
   const [projectCounts] = await connection.execute(countSQL, [likeString, likeString, likeString]);
-  const allPage = Math.floor(projectCounts[0].count / 6) + 1;
+  const allPage = Math.ceil(projectCounts[0].count / 6);
   connection.release();
   return { projects: keywordProducts, page: paging + 1, allPage };
 };
@@ -129,7 +129,7 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
     connection.release();
     return {};
   }
-	console.log(selectResponse[0].versionID);
+  console.log(selectResponse[0].versionID);
   let fileID;
   const [fileResponse] = await connection.execute(latestFile, [selectResponse[0].versionID]);
   if (fileResponse.length !== 0) {
