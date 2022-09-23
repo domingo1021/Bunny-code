@@ -36,6 +36,14 @@ const writeBattleFile = async (battleID, winnerURL) => {
   await pool.execute(writeFileSQL, [winnerURL, battleID]);
 };
 
+const ifBattleExists = async (battleName) => {
+  const checkSQL = `
+  SELECT count(battle_id) as count FROM battle WHERE battle_name = ? 
+  `;
+  const [checkResponse] = await pool.execute(checkSQL, [battleName]);
+  return checkResponse[0].count;
+};
+
 module.exports = {
-  createBattle, getAllBattles, writeBattleFile,
+  createBattle, getAllBattles, writeBattleFile, ifBattleExists,
 };

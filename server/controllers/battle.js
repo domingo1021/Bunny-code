@@ -32,4 +32,23 @@ const getAllBattles = async (req, res) => {
   });
 };
 
-module.exports = { createBattle, getAllBattles };
+const ifBattleExists = async (req, res) => {
+  const { battleName } = req.params;
+  if (battleName.length > 30) {
+    return res.status(400).json({
+      msg: 'Battle name should not be larger than 30 characters.',
+    });
+  }
+  // TODO: check battle detail.
+  const checkExists = await Battle.ifBattleExists(battleName);
+  if (checkExists === 1) {
+    return res.status(400).json({
+      msg: 'Battle name already exists.',
+    });
+  }
+  return res.status(200).json({
+    data: true,
+  });
+};
+
+module.exports = { createBattle, getAllBattles, ifBattleExists };
