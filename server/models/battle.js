@@ -71,7 +71,7 @@ const getBattlesByUser = async (keyword, status, paging) => {
   const connection = await pool.getConnection();
   const likeString = `%${keyword}%`;
   const searchUserSQL = `
-    SELECT user_id as userID FROM USER WHERE user_name LIKE ?;
+    SELECT user_id as userID FROM user WHERE user_name LIKE ?;
   `;
   const userOneSQL = `
   SELECT b.battle_id as battleID, b.battle_name as battleName, b.watch_count as watchCount,
