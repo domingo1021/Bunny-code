@@ -47,7 +47,7 @@ const ifBattleExists = async (req, res) => {
     });
   }
   return res.status(200).json({
-    data: true,
+    data: false,
   });
 };
 
