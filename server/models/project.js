@@ -52,7 +52,7 @@ const projectDetials = async (projectName) => {
 const searchProjects = async (keywords, paging) => {
   console.log(keywords, paging);
   const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, 
-  u.user_name as userName, u.user_id as userID;
+  u.user_name as userName, u.user_id as userID
   FROM project as p
   LEFT JOIN user as u
   ON p.user_id = u.user_id
