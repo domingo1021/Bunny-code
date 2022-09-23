@@ -195,6 +195,20 @@ const updateStarCount = async (projectID) => {
   await pool.execute(sql, [projectID]);
 };
 
+const getTopThreeProjects = async () => {
+  const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, 
+  p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, 
+  u.user_name as userName, u.user_id as userID
+  FROM project as p
+  LEFT JOIN user as u
+  ON p.user_id = u.user_id 
+  WHERE is_public = 1
+  ORDER BY watch_count DESC
+  LIMIT 3`;
+  const [topThree] = await pool.execute(sql);
+  return topThree;
+};
+
 module.exports = {
   searchProjects,
   getAllProjects,
@@ -203,4 +217,5 @@ module.exports = {
   projectDetials,
   updateWatchCount,
   updateStarCount,
+  getTopThreeProjects,
 };

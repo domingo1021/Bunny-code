@@ -49,6 +49,11 @@ const getAllProjects = async (paging) => {
   return responseObject;
 };
 
+const getTopThreeProjects = async () => {
+  const responseObject = await Project.getTopThreeProjects();
+  return responseObject;
+};
+
 const getProjects = async (req, res) => {
   const { information } = req.params;
   const { projectName, keywords } = req.query;
@@ -67,12 +72,13 @@ const getProjects = async (req, res) => {
         return res.status(400).json({ msg: 'Bad request, please provide proejct id.' });
       }
       try {
-        console.log(projectName);
         responseObject = await projectDetails(projectName);
-        console.log(responseObject);
       } catch (error) {
         return res.status(error.status).json({ msg: error.msg });
       }
+      break;
+    case 'top':
+      responseObject = await getTopThreeProjects();
       break;
     default:
       // all
