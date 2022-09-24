@@ -58,6 +58,28 @@ async function compile(userID, fileName, codes) {
   return compilerResult;
 }
 
+async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
+  const tmpTime = Date.now();
+  const tmpFileName = `battle_tmp_codes/${battlerNumber}_${userID}_${tmpTime}.js`;
+  const battleCodeRoute = `./docker_tool/${tmpFileName}`;
+  fs.writeFileSync(battleCodeRoute, codes);
+  let compilerResults;
+  switch (questionName) {
+    case 'Two sum': {
+      try {
+        compilerResults = await runCommand(`docker run -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e TWOSUMFILE=./${tmpFileName} --rm sandbox /bunny_code/twoSum.js`);
+      } catch (error) {
+        compilerResults = error;
+      }
+      break;
+    }
+    default:
+      break;
+  }
+  fs.rmSync(battleCodeRoute);
+  return compilerResults;
+}
+
 module.exports = {
-  wrapAsync, fileUploader, FileUploadException, runCommand, compile,
+  wrapAsync, fileUploader, FileUploadException, runCommand, compile, leetCodeCompile,
 };

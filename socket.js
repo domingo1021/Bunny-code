@@ -7,7 +7,7 @@ const {
 } = require('./socket/battle');
 const { versionEditStatus, editVersion, unEditing } = require('./socket/editor');
 const { getUserByName } = require('./socket/user');
-const { compile } = require('./server/services/service');
+const { compile, leetCodeCompile } = require('./server/services/service');
 const Cache = require('./utils/cache');
 // const { writeRecord, queryRecord } = require('./server/controllers/codeRecord');
 
@@ -283,8 +283,11 @@ io.on('connection', async (socket) => {
 
   socket.on('compile', async (queryObject) => {
     // TODO: 對照 compile result & answer
+    // TODO: Answer for question 要先放好在 Redis 內 (JSON.stringify) --> write a CRUD question answers array function
+    // TODO: 如果 Answer wrong 直接回罐頭錯誤訊息，不用給後端 stderr message.
     const answer = await Cache.hGet(`${socket.battleID}`, 'answer');
-    let compilerResult = await compile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes);
+    const questionName = 'Two sum';
+    const compilerResult = await leetCodeCompile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes, questionName);
     // const compilerResult = '6';
     socket.to(socket.battleID).emit(
       'compileDone',
@@ -297,35 +300,35 @@ io.on('connection', async (socket) => {
       battlerNumber: queryObject.battlerNumber,
       compilerResult,
     });
-    // TODO: split answer with \n
-    // TODO: check answer, for object, user JSON.stringify & parse to get unique format.
-    compilerResult = compilerResult.split('\n');
-    compilerResult.pop();
-    compilerResult = compilerResult.reduce((prev, curr) => {
-      prev += curr;
-      return prev;
-    }, '');
-    if (answer.includes('[') || answer.includes('{')) {
-      if (JSON.stringify(JSON.parse(answer)) !== JSON.stringify(JSON.parse(compilerResult))) {
-        return;
-      }
-    } else if (answer !== compilerResult) {
-      return;
-    }
-    console.log(`${socket.user.name} win the game`);
-    // update battle record  --> 1. winner id & finish.
-    await battleFinish(queryObject.battleID, socket.user.id);
-    await Cache.del(`${socket.battleID}`);
-    socket.to(socket.battleID).emit('battleOver', {
-      winnerID: socket.user.id,
-      winnerName: socket.user.name,
-      reason: `${socket.user.name} just compiled with the right answer`,
-    });
-    socket.emit('battleOver', {
-      winnerID: socket.user.id,
-      winnerName: socket.user.name,
-      reason: 'For just compiled with the right answer',
-    });
+
+    // TODO: check answer
+    // compilerResult = compilerResult.split('\n');
+    // compilerResult.pop();
+    // compilerResult = compilerResult.reduce((prev, curr) => {
+    //   prev += curr;
+    //   return prev;
+    // }, '');
+    // if (answer.includes('[') || answer.includes('{')) {
+    //   if (JSON.stringify(JSON.parse(answer)) !== JSON.stringify(JSON.parse(compilerResult))) {
+    //     return;
+    //   }
+    // } else if (answer !== compilerResult) {
+    //   return;
+    // }
+    // console.log(`${socket.user.name} win the game`);
+    // // update battle record  --> 1. winner id & finish.
+    // await battleFinish(queryObject.battleID, socket.user.id);
+    // await Cache.del(`${socket.battleID}`);
+    // socket.to(socket.battleID).emit('battleOver', {
+    //   winnerID: socket.user.id,
+    //   winnerName: socket.user.name,
+    //   reason: `${socket.user.name} just compiled with the right answer`,
+    // });
+    // socket.emit('battleOver', {
+    //   winnerID: socket.user.id,
+    //   winnerName: socket.user.name,
+    //   reason: 'For just compiled with the right answer',
+    // });
   });
 
   socket.on('getWinnerData', async (queryObject) => {
