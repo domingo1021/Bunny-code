@@ -2,16 +2,28 @@ require('dotenv').config();
 const pool = require('../utils/rmdb');
 
 const queryBattler = async (battleID) => {
+  // if is finish --> return null
   const connection = await pool.getConnection();
-  const sqlFirst = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name, is_finish, q.question_name, q.question_url
-  FROM battle as b, user as u, question as q
-  WHERE battle_id = ? AND u.user_id = b.first_user_id AND q.question_id = b.question_id`;
+  const sqlFirst = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name, b.is_finish, 
+  q.question_name, q.question_url, a.answer_number as answerNumber, a.test_case as testCate, a.output
+  FROM battle as b, user as u, question as q, answer as a
+  WHERE battle_id = ? AND u.user_id = b.first_user_id AND q.question_id = b.question_id AND q.question_id = a.question_id`;
   const sqlSecond = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name
   FROM battle as b, user as u 
   WHERE battle_id = ? AND u.user_id = b.second_user_id`;
   const [firstUser] = await connection.execute(sqlFirst, [battleID]);
+  if (firstUser[0].isFinish === 1) {
+    // TODO: say the battle had already been finished.
+    return null;
+  }
   const [secondUser] = await connection.execute(sqlSecond, [battleID]);
-  console.log(firstUser, secondUser);
+  const answer = firstUser.map((result) => {
+    const answerObject = {};
+    const testObject = {};
+    testObject[`${result.testCase}`] = result.output;
+    answerObject[`answer-${result.answerNumber}`] = JSON.stringify(testObject);
+    return answerObject;
+  });
   // TODO: Fix: fix if there is no battle;
   const responseObject = {
     battleID,
@@ -23,6 +35,7 @@ const queryBattler = async (battleID) => {
     isFinish: firstUser[0].is_finish,
     questionName: firstUser[0].question_name,
     questionURL: process.env.AWS_DISTRIBUTION_NAME + firstUser[0].question_url,
+    answer,
   };
   connection.release();
   return responseObject;
