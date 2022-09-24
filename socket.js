@@ -309,11 +309,19 @@ io.on('connection', async (socket) => {
       queryObject.questionName,
     );
     console.log(`Compile results, status: ${resultStatus} result: ${compilerResult}`);
+
     // const compilerResult = '6';
     if (resultStatus === 'failed') {
       console.log('failed.');
       // return
     }
+
+    const correnctions = answers.map((answer, index) => {
+      console.log('answer: ', Object.values(answer)[0]);
+      console.log('result: ', JSON.parse(compilerResult)[index]);
+      return Object.values(answer)[0] === JSON.parse(compilerResult)[index];
+    });
+    console.log(correnctions);
     socket.to(socket.battleID).emit(
       'compileDone',
       {

@@ -37,7 +37,7 @@ async function runCommand(cmd) {
         reject(stderr);
       }
       if (stdout) {
-        console.log(`stdout: ${stdout}`);
+        // console.log(`stdout: ${stdout}`);
         resolve(stdout);
       }
     });
