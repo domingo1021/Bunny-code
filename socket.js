@@ -301,9 +301,14 @@ io.on('connection', async (socket) => {
     answerIndex.forEach((index) => {
       answers.push(JSON.parse(battleObject[`answer-${index}`]));
     });
-    console.log('compile answers: ', answers);
-    const questionName = 'Two sum';
-    const [compilerResult, resultStatus] = await leetCodeCompile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes, questionName);
+    console.log(`Answers of ${queryObject.questionName}: `, answers);
+    const [compilerResult, resultStatus] = await leetCodeCompile(
+      queryObject.battlerNumber,
+      queryObject.battleID,
+      queryObject.codes,
+      queryObject.questionName,
+    );
+    console.log(`Compile results, status: ${resultStatus} result: ${compilerResult}`);
     // const compilerResult = '6';
     if (resultStatus === 'failed') {
       console.log('failed.');

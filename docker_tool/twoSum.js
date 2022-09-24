@@ -1,5 +1,5 @@
 // require('dotenv').config()
-const { twoSum } = require(process.env.TWOSUMFILE);
+const { twoSum } = require(process.env.TWO_SUM_FILE);
 
 console.log(process.env.TWOSUMFILE);
 console.log(twoSum);

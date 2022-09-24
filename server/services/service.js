@@ -68,7 +68,27 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
   switch (questionName) {
     case 'Two sum': {
       try {
-        compilerResults = await runCommand(`docker run -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e TWOSUMFILE=./${tmpFileName} --rm sandbox /bunny_code/twoSum.js`);
+        compilerResults = await runCommand(`docker run -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e TWO_SUM_FILE=./${tmpFileName} --rm sandbox /bunny_code/twoSum.js`);
+        resultStatus = 'success';
+      } catch (error) {
+        compilerResults = error;
+        resultStatus = 'failed';
+      }
+      break;
+    }
+    case 'Hello world': {
+      try {
+        compilerResults = await runCommand(`docker run -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e HELLO_FILE=./${tmpFileName} --rm sandbox /bunny_code/hello.js`);
+        resultStatus = 'success';
+      } catch (error) {
+        compilerResults = error;
+        resultStatus = 'failed';
+      }
+      break;
+    }
+    case 'Longest common subseauence': {
+      try {
+        compilerResults = await runCommand(`docker run -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e LCS_FILE=./${tmpFileName} --rm sandbox /bunny_code/subsequence.js`);
         resultStatus = 'success';
       } catch (error) {
         compilerResults = error;
