@@ -3,7 +3,7 @@ const pool = require('../utils/rmdb');
 
 const queryBattler = async (battleID) => {
   const connection = await pool.getConnection();
-  const sqlFirst = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name, is_finish, q.question_name, q.question_url, q.answer as answer
+  const sqlFirst = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name, is_finish, q.question_name, q.question_url
   FROM battle as b, user as u, question as q
   WHERE battle_id = ? AND u.user_id = b.first_user_id AND q.question_id = b.question_id`;
   const sqlSecond = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name
@@ -23,7 +23,6 @@ const queryBattler = async (battleID) => {
     isFinish: firstUser[0].is_finish,
     questionName: firstUser[0].question_name,
     questionURL: process.env.AWS_DISTRIBUTION_NAME + firstUser[0].question_url,
-    answer: firstUser[0].answer,
   };
   connection.release();
   return responseObject;
@@ -31,14 +30,22 @@ const queryBattler = async (battleID) => {
 
 const createBattle = async (battleName, battleLevel, firstUserID, secondUserID) => {
   console.log(battleName, battleLevel, firstUserID, secondUserID);
-	const connection = await pool.getConnection();
+  const connection = await pool.getConnection();
   const questionBattle = `
-  SELECT question_id as questionID, answer FROM question WHERE question_level = ?;
+  SELECT question_id as questionID, answer_number as answerNumber, test_case as testCase, output FROM question as q, answer as a 
+  WHERE question_level = ? AND q.question_id = q.question_id;
   `;
   const [questionResult] = await connection.execute(questionBattle, [battleLevel]);
   console.log('questionResult: ', questionResult);
-  const { questionID, answer } = questionResult[0];
-  console.log(battleName, firstUserID, secondUserID, questionID);
+  const { questionID } = questionResult[0];
+  const answer = questionResult.map((result) => {
+    const answerObject = {};
+    const testObject = {};
+    testObject[`${result.testCase}`] = result.answer;
+    answerObject[`answer-${result.answerNumber}`] = JSON.stringify(testObject);
+    return answerObject;
+  });
+  console.log('Answer: ', answer);
   const battleSQL = `
   INSERT INTO battle (battle_name, first_user_id, second_user_id, question_id) 
   VALUES (?, ?, ?, ?)`;
@@ -89,7 +96,7 @@ const addBattleWatch = async (battleID) => {
 const getWinnerData = async (battleID) => {
   const winnerSQL = `
     SELECT b.battle_name as battleName, b.watch_count as watchCount, b.winner_id as winnerID, b.winner_url as winnerURL, 
-    b.question_id as questionID, q.question_name as questionName, q.question_url as questionURL, q.question_level as level, q.answer,
+    b.question_id as questionID, q.question_name as questionName, q.question_url as questionURL, q.question_level as level
     u.user_name as userName, u.email, u.profile as profile, u.picture, u.level as userLevel
     FROM battle as b, question as q, user as u
     WHERE b.battle_id = ? AND b.winner_id = u.user_id AND b.question_id = q.question_id;
