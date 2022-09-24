@@ -318,12 +318,14 @@ io.on('connection', async (socket) => {
     }
 
     const correnctions = answers.map((answer, index) => {
-      let currAnwser = Object.values(answer)[0];
-      if (currAnwser.includes('[')) {
-        currAnwser = JSON.parse(currAnwser);
+      let currAnswer = Object.values(answer)[0];
+      if (currAnswer.includes('[')) {
+        currAnswer = JSON.parse(currAnswer);
+      }else{
+currAnswer = +currAnswer
       }
-      console.log(currAnwser, JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index]);
-      return currAnwser === JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index];
+      console.log(`||${currAnswer}||`, typeof currAnswer,typeof JSON.parse(compilerResult.replaceAll("\n", '').replaceAll("'", '"'))[index], `||${JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index]}||`);
+      return currAnswer == JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index];
     });
     console.log(correnctions);
     socket.to(socket.battleID).emit(
