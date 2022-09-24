@@ -234,18 +234,29 @@ io.on('connection', async (socket) => {
     // user join battle socket room.
     let userCategory = CLIENT_CATEGORY.visitor;
     const battleResponse = await queryBattler(queryObject.battleID);
+    if (battleResponse === null) {
+      console.log('Battle finished alert');
+      socket.emit('battleFinished');
+    }
     if ([battleResponse.firstUserID, battleResponse.secondUserID].includes(socket.user.id)) {
       userCategory = CLIENT_CATEGORY.self;
     }
     socket.battleID = `battle-${queryObject.battleID}`;
     socket.join(socket.battleID);
     let battleObject = await Cache.HGETALL(`${socket.battleID}`);
-    const { firstUserID, secondUserID, answer } = battleResponse;
+    const { firstUserID, secondUserID } = battleResponse;
+    // TODO: Set battle object if the battle not exists
     if (Object.keys(battleObject).length === 0) {
       const cacheObject = {};
-      cacheObject[firstUserID] = JSON.stringify({ ready: '0', codes: '' });
-      cacheObject[secondUserID] = JSON.stringify({ ready: '0', codes: '' });
-      cacheObject.answer = answer;
+      cacheObject[`${battlePayload.firstUserID}`] = JSON.stringify({ ready: 0, codes: '' });
+      cacheObject[`${socket.user.id}`] = JSON.stringify({ ready: 0, codes: '' });
+      answer.forEach((answerObject) => {
+        cacheObject[`${Object.keys(answerObject)[0]}`] = Object.values(answerObject)[0];
+      });
+      // const cacheObject = {};
+      // cacheObject[firstUserID] = JSON.stringify({ ready: '0', codes: '' });
+      // cacheObject[secondUserID] = JSON.stringify({ ready: '0', codes: '' });
+      // cacheObject.answer = answer;
       await Cache.HSET(`${socket.battleID}`, cacheObject);
       battleObject = cacheObject;
     }
