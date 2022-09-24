@@ -320,12 +320,15 @@ io.on('connection', async (socket) => {
     const correnctions = answers.map((answer, index) => {
       let currAnswer = Object.values(answer)[0];
       if (currAnswer.includes('[')) {
-        currAnswer = JSON.parse(currAnswer);
-      }else{
-currAnswer = +currAnswer
+        currAnswer = JSON.stringify(JSON.parse(currAnswer));
+      } else {
+        currAnswer = +currAnswer;
       }
-      console.log(`||${currAnswer}||`, typeof currAnswer,typeof JSON.parse(compilerResult.replaceAll("\n", '').replaceAll("'", '"'))[index], `||${JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index]}||`);
-      return currAnswer == JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index];
+      let result = JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index];
+      if (typeof result === 'object') {
+        result = JSON.stringify(result);
+      }
+      return currAnswer === result;
     });
     console.log(correnctions);
     socket.to(socket.battleID).emit(
