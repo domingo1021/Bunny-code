@@ -308,7 +308,7 @@ io.on('connection', async (socket) => {
       queryObject.codes,
       queryObject.questionName,
     );
-	  console.log(`|||${compilerResult.replace("\n", "")}|||`)
+	  console.log(`|||${compilerResult.replace('\n', '')}|||`);
     console.log(`Compile results, status: ${resultStatus} result: ${compilerResult}`);
 
     // const compilerResult = '6';
@@ -318,8 +318,12 @@ io.on('connection', async (socket) => {
     }
 
     const correnctions = answers.map((answer, index) => {
-      console.log('answer: ', Object.values(answer)[0]);
-      return Object.values(answer)[0] === JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index];
+      let currAnwser = Object.values(answer)[0];
+      console.log(currAnwser, JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index]);
+      if (currAnwser.includes('[')) {
+        currAnwser = JSON.parse(currAnwser);
+      }
+      return currAnwser === JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index];
     });
     console.log(correnctions);
     socket.to(socket.battleID).emit(
