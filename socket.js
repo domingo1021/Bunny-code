@@ -295,10 +295,20 @@ io.on('connection', async (socket) => {
     // TODO: 對照 compile result & answer
     // TODO: Answer for question 要先放好在 Redis 內 (JSON.stringify) --> write a CRUD question answers array function
     // TODO: 如果 Answer wrong 直接回罐頭錯誤訊息，不用給後端 stderr message.
-    const answer = await Cache.hGet(`${socket.battleID}`, 'answer');
+    const battleObject = await Cache.hGetAll(`${socket.battleID}`);
+    const answers = [];
+    const answerIndex = [1, 2, 3, 4, 5];
+    answerIndex.forEach((index) => {
+      answers.push(JSON.parse(battleObject[`answer-${index}`]));
+    });
+    console.log('compile answers: ', answers);
     const questionName = 'Two sum';
-    const compilerResult = await leetCodeCompile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes, questionName);
+    const [compilerResult, resultStatus] = await leetCodeCompile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes, questionName);
     // const compilerResult = '6';
+    if (resultStatus === 'failed') {
+      console.log('failed.');
+      // return
+    }
     socket.to(socket.battleID).emit(
       'compileDone',
       {
