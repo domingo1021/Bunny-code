@@ -64,12 +64,15 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
   const battleCodeRoute = `./docker_tool/${tmpFileName}`;
   fs.writeFileSync(battleCodeRoute, codes);
   let compilerResults;
+  let resultStatus;
   switch (questionName) {
     case 'Two sum': {
       try {
         compilerResults = await runCommand(`docker run -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e TWOSUMFILE=./${tmpFileName} --rm sandbox /bunny_code/twoSum.js`);
+        resultStatus = 'success';
       } catch (error) {
         compilerResults = error;
+        resultStatus = 'failed';
       }
       break;
     }
@@ -77,7 +80,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
       break;
   }
   fs.rmSync(battleCodeRoute);
-  return compilerResults;
+  return [compilerResults, resultStatus];
 }
 
 module.exports = {
