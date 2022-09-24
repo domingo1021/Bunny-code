@@ -319,10 +319,10 @@ io.on('connection', async (socket) => {
 
     const correnctions = answers.map((answer, index) => {
       let currAnwser = Object.values(answer)[0];
-      console.log(currAnwser, JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index]);
       if (currAnwser.includes('[')) {
         currAnwser = JSON.parse(currAnwser);
       }
+      console.log(currAnwser, JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index]);
       return currAnwser === JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index];
     });
     console.log(correnctions);
