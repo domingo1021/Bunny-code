@@ -5,7 +5,7 @@ const queryBattler = async (battleID) => {
   // if is finish --> return null
   const connection = await pool.getConnection();
   const sqlFirst = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name, b.is_finish, 
-  q.question_name, q.question_url, a.answer_number as answerNumber, a.test_case as testCate, a.output
+  q.question_name, q.question_url, a.answer_number as answerNumber, a.test_case as testCase, a.output
   FROM battle as b, user as u, question as q, answer as a
   WHERE battle_id = ? AND u.user_id = b.first_user_id AND q.question_id = b.question_id AND q.question_id = a.question_id`;
   const sqlSecond = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name
