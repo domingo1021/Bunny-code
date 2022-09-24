@@ -42,7 +42,7 @@ const createBattle = async (battleName, battleLevel, firstUserID, secondUserID) 
   const answer = questionResult.map((result) => {
     const answerObject = {};
     const testObject = {};
-    testObject[`${result.testCase}`] = result.answer;
+    testObject[`${result.testCase}`] = result.output;
     answerObject[`answer-${result.answerNumber}`] = JSON.stringify(testObject);
     return answerObject;
   });
