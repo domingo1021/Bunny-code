@@ -95,6 +95,7 @@ io.on('connection', async (socket) => {
     } else if (Cache.ready) {
       await Cache.set(`${socket.versionID}`, `${socket.id}`);
     }
+    socket.versionID = `version-${projectObject.versionID}`;
     // TODO: 存入 Redis, 表示某個 socket 正在編輯程式碼
     // Redis SET key = versionID, value = socketID
     console.log('status check responseObject: ', userObject);
@@ -350,9 +351,7 @@ io.on('connection', async (socket) => {
           const socketID = await isolatedClient.get(`${socket.versionID}`);
           if (socketID !== null) {
             if (socketID === socket.id) {
-              console.log(`DB update edit status of version-${socket.versionID}`);
-              await unEditing(socket.versionID);
-              console.log(`redis delete socket with id ${socketID}`);
+              await unEditing(socket.versionID.split('-')[1]);
               isolatedClient.del(`${socket.versionID}`);
             }
           }
