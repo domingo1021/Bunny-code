@@ -313,7 +313,8 @@ io.on('connection', async (socket) => {
 
     // const compilerResult = '6';
     if (resultStatus === 'failed') {
-      console.log('failed.');
+      // console.log('failed.');
+      return;
       // return
     }
 
@@ -321,12 +322,12 @@ io.on('connection', async (socket) => {
       let currAnswer = Object.values(answer)[0];
       if (currAnswer.includes('[')) {
         currAnswer = JSON.stringify(JSON.parse(currAnswer));
-      } else {
-        currAnswer = +currAnswer;
       }
       let result = JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index];
       if (typeof result === 'object') {
         result = JSON.stringify(result);
+      } else if (typeof result === 'number') {
+        result = `${result}`;
       }
       return currAnswer === result;
     });
