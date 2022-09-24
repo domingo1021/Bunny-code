@@ -1,11 +1,11 @@
 FROM node:slim
 
-WORKDIR /app
+WORKDIR /bunny_code
 
 COPY . .
 
-RUN npm install
+#RUN npm install
 
 ENTRYPOINT ["node"]
 
-CMD ["/app/tool.js"]
+CMD ["/bunny_code/tool.js"]

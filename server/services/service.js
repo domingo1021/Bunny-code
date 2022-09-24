@@ -46,11 +46,11 @@ async function runCommand(cmd) {
 
 async function compile(userID, fileName, codes) {
   const tmpTime = Date.now();
-  const userCodeRoute = `./user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`;
+  const userCodeRoute = `./docker_tool/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`;
   fs.writeFileSync(userCodeRoute, codes);
   let compilerResult;
   try {
-    compilerResult = await runCommand(`docker run -v \$\(pwd\)/user_tmp_codes:/app/user_tmp_codes --rm node-tool /app/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`);
+    compilerResult = await runCommand(`docker run -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes --rm node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`);
   } catch (error) {
     compilerResult = error;
   }
