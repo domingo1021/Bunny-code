@@ -32,7 +32,8 @@ const createBattle = async (battleName, battleLevel, firstUserID, secondUserID) 
   console.log(battleName, battleLevel, firstUserID, secondUserID);
   const connection = await pool.getConnection();
   const questionBattle = `
-  SELECT question_id as questionID, answer_number as answerNumber, test_case as testCase, output FROM question as q, answer as a 
+  SELECT q.question_id as questionID, a.answer_number as answerNumber, a.test_case as testCase, a.output 
+  FROM question as q, answer as a 
   WHERE question_level = ? AND q.question_id = q.question_id;
   `;
   const [questionResult] = await connection.execute(questionBattle, [battleLevel]);
