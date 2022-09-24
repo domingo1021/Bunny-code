@@ -175,7 +175,9 @@ io.on('connection', async (socket) => {
     const cacheObject = {};
     cacheObject[`${battlePayload.firstUserID}`] = JSON.stringify({ ready: 0, codes: '' });
     cacheObject[`${socket.user.id}`] = JSON.stringify({ ready: 0, codes: '' });
-    cacheObject.answer = answer;
+    answer.forEach((answerObject) => {
+      cacheObject[`${Object.keys(answerObject)[0]}`] = Object.keys(answerObject)[0];
+    });
     const cacheBattleResult = await Cache.HSET(`${socket.battleID}`, cacheObject);
     if (cacheBattleResult) {
       io.to(socketID).emit('battleCreated', {
