@@ -347,7 +347,14 @@ io.on('connection', async (socket) => {
       if (corrections[i]) {
         testCase.push({ ...answers[i], 'Compile result': jsonResult[i] });
       } else {
-        testCase.push({ ...answers[i], 'Compiler result': 'Error' });
+        if (i > 2) {
+          testCase.push({
+            question: 'answer',
+            'Compiler result': 'Error',
+          });
+        } else {
+          testCase.push({ ...answers[i], 'Compiler result': 'Error' });
+        }
         break;
       }
     }
