@@ -313,20 +313,41 @@ io.on('connection', async (socket) => {
     // const compilerResult = '6';
     // TODO: User limit count. --> 前端也必須擋使用者瘋狂按按鍵的問題
     let corrections = [];
+    const jsonResult = [];
     if (resultStatus === 'success') {
-      corrections = answers.map((answer, index) => {
-        let currAnswer = Object.values(answer)[0];
-        if (currAnswer.includes('[')) {
-          currAnswer = JSON.stringify(JSON.parse(currAnswer));
-        }
-        let result = JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"').replaceAll('undefined', 'null'))[index];
-        if (typeof result === 'object') {
-          result = JSON.stringify(result);
-        } else if (typeof result === 'number') {
-          result = `${result}`;
-        }
-        return currAnswer === result;
-      });
+      try {
+        corrections = answers.map((answer, index) => {
+          let currAnswer = Object.values(answer)[0];
+          if (currAnswer.includes('[')) {
+            currAnswer = JSON.stringify(JSON.parse(currAnswer));
+          }
+          // let result = JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"').replaceAll('undefined', 'null'))[index];
+          let result = JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index];
+          if (typeof result === 'object') {
+            result = JSON.stringify(result);
+          } else if (typeof result === 'number') {
+            result = `${result}`;
+          }
+          jsonResult.push(result);
+          return currAnswer === result;
+        });
+      } catch (error) {
+        return false;
+      }
+      // corrections = answers.map((answer, index) => {
+      //   let currAnswer = Object.values(answer)[0];
+      //   if (currAnswer.includes('[')) {
+      //     currAnswer = JSON.stringify(JSON.parse(currAnswer));
+      //   }
+      //   let result = JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"').replaceAll('undefined', 'null'))[index];
+      //   if (typeof result === 'object') {
+      //     result = JSON.stringify(result);
+      //   } else if (typeof result === 'number') {
+      //     result = `${result}`;
+      //   }
+      //   jsonResult.push(result);
+      //   return currAnswer === result;
+      // });
     } else {
       corrections = [false];
     }
