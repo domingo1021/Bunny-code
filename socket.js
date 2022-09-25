@@ -351,7 +351,7 @@ io.on('connection', async (socket) => {
         if (i > 2) {
           testCase.push({
             'Hided test case': 'answer',
-            'Compile result': 'Error',
+            'Compile result': 'Unexpected result',
           });
         } else {
           testCase.push({ ...answers[i], 'Compile result': jsonResult[i] });
