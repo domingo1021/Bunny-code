@@ -12,3 +12,5 @@ question
 
 ./docker_tool/user_tmp_codes
 ./docker_tool/battle_tmp_codes
+
+./backup
