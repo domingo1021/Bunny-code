@@ -334,6 +334,7 @@ io.on('connection', async (socket) => {
         });
       } else {
         corrections = [false];
+        jsonResult.push(compilerResult);
       }
     } catch (error) {
       console.log('error: ', error);
@@ -353,7 +354,7 @@ io.on('connection', async (socket) => {
             'Compile result': 'Error',
           });
         } else {
-          testCase.push({ ...answers[i], 'Compile result': 'Error' });
+          testCase.push({ ...answers[i], 'Compile result': jsonResult[i] });
         }
         break;
       }
