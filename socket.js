@@ -342,6 +342,7 @@ io.on('connection', async (socket) => {
         testCase.push(answers[i], { 'Compile result': compilerResult[i] });
       } else {
         testCase.push(answers[i], { 'Compiler result': 'Error' });
+        break;
       }
     }
     socket.to(socket.battleID).emit(
