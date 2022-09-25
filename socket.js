@@ -315,8 +315,8 @@ io.on('connection', async (socket) => {
     let corrections = [];
     const jsonResult = [];
     if (resultStatus === 'success') {
-      try {
-        corrections = answers.map((answer, index) => {
+      corrections = answers.map((answer, index) => {
+        try {
           let currAnswer = Object.values(answer)[0];
           if (currAnswer.includes('[')) {
             currAnswer = JSON.stringify(JSON.parse(currAnswer));
@@ -330,10 +330,10 @@ io.on('connection', async (socket) => {
           }
           jsonResult.push(result);
           return currAnswer === result;
-        });
-      } catch (error) {
-        return false;
-      }
+        } catch (error) {
+          return false;
+        }
+      });
       // corrections = answers.map((answer, index) => {
       //   let currAnswer = Object.values(answer)[0];
       //   if (currAnswer.includes('[')) {
