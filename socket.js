@@ -349,11 +349,11 @@ io.on('connection', async (socket) => {
       } else {
         if (i > 2) {
           testCase.push({
-            question: 'answer',
-            'Compiler result': 'Error',
+            'Hided test case': 'answer',
+            'Compile result': 'Error',
           });
         } else {
-          testCase.push({ ...answers[i], 'Compiler result': 'Error' });
+          testCase.push({ ...answers[i], 'Compile result': 'Error' });
         }
         break;
       }
