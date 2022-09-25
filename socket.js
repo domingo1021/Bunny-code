@@ -323,8 +323,7 @@ io.on('connection', async (socket) => {
           if (currAnswer.includes('[')) {
             currAnswer = JSON.stringify(JSON.parse(currAnswer));
           }
-          // let result = JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"').replaceAll('undefined', 'null'))[index];
-          let result = JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index];
+          let result = JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"').replaceAll('undefined', 'null'))[index];
           if (typeof result === 'object') {
             result = JSON.stringify(result);
           } else if (typeof result === 'number') {
