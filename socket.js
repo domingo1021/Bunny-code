@@ -318,7 +318,7 @@ io.on('connection', async (socket) => {
     // check the answer;
     try {
       if (resultStatus === 'success') {
-        corrections = answers.map((answer, index) => {
+        answers.forEach((answer, index) => {
           let currAnswer = Object.values(answer)[0];
           if (currAnswer.includes('[')) {
             currAnswer = JSON.stringify(JSON.parse(currAnswer));
@@ -331,14 +331,14 @@ io.on('connection', async (socket) => {
             result = `${result}`;
           }
           jsonResult.push(result);
-          return currAnswer === result;
+          corrections.push(currAnswer === result);
         });
       } else {
         corrections = [false];
       }
     } catch (error) {
       console.log('error: ', error);
-      corrections = [false];
+      corrections.push(false);
     }
     // TODO: build the object that will send to frontend for correction display.
     // Send user the test case which is wrong.
