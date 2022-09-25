@@ -301,24 +301,26 @@ io.on('connection', async (socket) => {
     answerIndex.forEach((index) => {
       answers.push(JSON.parse(battleObject[`answer-${index}`]));
     });
-    console.log(`Answers of ${queryObject.questionName}: `, answers);
+    // console.log(`Answers of ${queryObject.questionName}: `, answers);
     const [compilerResult, resultStatus] = await leetCodeCompile(
       queryObject.battlerNumber,
       queryObject.battleID,
       queryObject.codes,
       queryObject.questionName,
     );
-	  console.log(`|||${compilerResult.replace('\n', '')}|||`);
-    console.log(`Compile results, status: ${resultStatus} result: ${compilerResult}`);
+	  // console.log(`|||${compilerResult.replace('\n', '')}|||`);
+    // console.log(`Compile results, status: ${resultStatus} result: ${compilerResult}`);
 
     // const compilerResult = '6';
     if (resultStatus === 'failed') {
+      // TODO: User limit count. --> 前端也必須擋使用者瘋狂按按鍵的問題
       // console.log('failed.');
+      console.log('Compile failed. ');
       return;
-      // return
     }
 
-    const correnctions = answers.map((answer, index) => {
+    // check the answer
+    const corrections = answers.map((answer, index) => {
       let currAnswer = Object.values(answer)[0];
       if (currAnswer.includes('[')) {
         currAnswer = JSON.stringify(JSON.parse(currAnswer));
@@ -331,19 +333,49 @@ io.on('connection', async (socket) => {
       }
       return currAnswer === result;
     });
-    console.log(correnctions);
+
+    // TODO: build the object that will send to frontend for correction display.
+    // Send user the test case which is wrong.
+    console.log('correction: ', corrections);
+    const testCase = [];
+    for (let i = 0; i < answers.length; i += 1) {
+      testCase.push(Object.keys(answers[i])[0]);
+      if (!corrections[i]) {
+        break;
+      }
+    }
     socket.to(socket.battleID).emit(
       'compileDone',
       {
         battlerNumber: queryObject.battlerNumber,
         compilerResult,
+        testCase,
       },
     );
     socket.emit('compileDone', {
       battlerNumber: queryObject.battlerNumber,
       compilerResult,
+      testCase,
     });
 
+    // Check is the battler compiler all true, then tag as winner.
+    const isWinner = corrections.every((correction) => correction);
+    console.log('Winner status: ', isWinner);
+    if (isWinner) {
+      console.log(`The winner is ${socket.user.id}`);
+      await battleFinish(queryObject.battleID, socket.user.id);
+      await Cache.del(`${socket.battleID}`);
+      socket.to(socket.battleID).emit('battleOver', {
+        winnerID: socket.user.id,
+        winnerName: socket.user.name,
+        reason: `${socket.user.name} just compiled with the right answer`,
+      });
+      socket.emit('battleOver', {
+        winnerID: socket.user.id,
+        winnerName: socket.user.name,
+        reason: 'For just compiled with the right answer',
+      });
+    }
     // TODO: check answer
     // compilerResult = compilerResult.split('\n');
     // compilerResult.pop();
