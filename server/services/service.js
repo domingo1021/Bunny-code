@@ -37,7 +37,7 @@ async function runCommand(cmd) {
         reject(stderr);
       }
       if (stdout) {
-        console.log(`stdout: ${stdout}`);
+        // console.log(`stdout: ${stdout}`);
         resolve(stdout);
       }
     });
@@ -46,11 +46,11 @@ async function runCommand(cmd) {
 
 async function compile(userID, fileName, codes) {
   const tmpTime = Date.now();
-  const userCodeRoute = `./user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`;
+  const userCodeRoute = `./docker_tool/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`;
   fs.writeFileSync(userCodeRoute, codes);
   let compilerResult;
   try {
-    compilerResult = await runCommand(`docker run -v \$\(pwd\)/user_tmp_codes:/app/user_tmp_codes --rm node-tool /app/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`);
+    compilerResult = await runCommand(`docker run -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes --rm node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`);
   } catch (error) {
     compilerResult = error;
   }
@@ -58,6 +58,51 @@ async function compile(userID, fileName, codes) {
   return compilerResult;
 }
 
+async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
+  const tmpTime = Date.now();
+  const tmpFileName = `battle_tmp_codes/${battlerNumber}_${userID}_${tmpTime}.js`;
+  const battleCodeRoute = `./docker_tool/${tmpFileName}`;
+  fs.writeFileSync(battleCodeRoute, codes);
+  let compilerResults;
+  let resultStatus;
+  switch (questionName) {
+    case 'Two sum': {
+      try {
+        compilerResults = await runCommand(`docker run -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e TWO_SUM_FILE=./${tmpFileName} --rm sandbox /bunny_code/twoSum.js`);
+        resultStatus = 'success';
+      } catch (error) {
+        compilerResults = error;
+        resultStatus = 'failed';
+      }
+      break;
+    }
+    case 'Hello world': {
+      try {
+        compilerResults = await runCommand(`docker run -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e HELLO_FILE=./${tmpFileName} --rm sandbox /bunny_code/hello.js`);
+        resultStatus = 'success';
+      } catch (error) {
+        compilerResults = error;
+        resultStatus = 'failed';
+      }
+      break;
+    }
+    case 'Longest common subseauence': {
+      try {
+        compilerResults = await runCommand(`docker run -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e LCS_FILE=./${tmpFileName} --rm sandbox /bunny_code/subsequence.js`);
+        resultStatus = 'success';
+      } catch (error) {
+        compilerResults = error;
+        resultStatus = 'failed';
+      }
+      break;
+    }
+    default:
+      break;
+  }
+  fs.rmSync(battleCodeRoute);
+  return [compilerResults, resultStatus];
+}
+
 module.exports = {
-  wrapAsync, fileUploader, FileUploadException, runCommand, compile,
+  wrapAsync, fileUploader, FileUploadException, runCommand, compile, leetCodeCompile,
 };

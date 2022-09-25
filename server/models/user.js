@@ -40,21 +40,38 @@ const getUserDetail = async (email, roleId) => {
   }
 };
 
-const getUserProjects = async (userID, category) => {
+const getUserDetailByID = async (userID) => {
+  const sql = `
+  SELECT user_id as userID, user_name as userName, email, 
+  follower_count as followerCount, profile, picture, level as userLevel
+  FROM user
+  WHERE user_id = ?
+  `;
+  const [userDetail] = await pool.execute(sql, [userID]);
+  return userDetail[0];
+};
+
+const getUserProjects = async (userID, category, keyword, paging) => {
   let sql;
   if (category === 'all') {
     sql = `SELECT project_id as projectID, project_name as projectName, project_description as projectDescription,
     watch_count as watchCount, star_count as starCount, is_public as isPublic, create_at as createAt 
     FROM project
-    WHERE user_id = ? AND deleted = 0
-    ORDER BY create_at DESC;`;
+    WHERE user_id = ? AND deleted = 0 AND (project_name LIKE ? OR project_description LIKE ? )
+    ORDER BY create_at DESC
+    LIMIT ? OFFSET ?
+    `;
+  } else {
+    sql = `SELECT project_id as projectID, project_name as projectName, project_description as projectDescription,
+    watch_count as watchCount, star_count as starCount, is_public as isPublic, create_at as createAt 
+    FROM project
+    WHERE user_id = ? AND deleted = 0 AND is_public = 1 AND (project_name LIKE ? OR project_description LIKE ? )
+    ORDER BY create_at DESC
+    LIMIT ? OFFSET ?;`;
   }
-  sql = `SELECT project_id as projectID, project_name as projectName, project_description as projectDescription,
-  watch_count as watchCount, star_count as starCount, is_public as isPublic, create_at as createAt 
-  FROM project
-  WHERE user_id = ? AND deleted = 0 AND is_public = 1
-  ORDER BY create_at DESC;`;
-  const [selectResponse] = await pool.execute(sql, [userID]);
+  const like = `%${keyword}%`;
+  const limitCount = paging * 6;
+  const [selectResponse] = await pool.query(sql, [userID, like, like, 6, limitCount]);
   return selectResponse;
 };
 
@@ -100,5 +117,5 @@ const getUserByName = async (userName) => {
 };
 
 module.exports = {
-  signUp, signIn, getUserDetail, getUserProjects, createUserProject, getUserByName,
+  signUp, signIn, getUserDetail, getUserProjects, createUserProject, getUserByName, getUserDetailByID,
 };

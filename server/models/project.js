@@ -51,7 +51,8 @@ const projectDetials = async (projectName) => {
 
 const searchProjects = async (keywords, paging) => {
   console.log(keywords, paging);
-  const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, u.user_name as userName
+  const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, 
+  u.user_name as userName, u.user_id as userID
   FROM project as p
   LEFT JOIN user as u
   ON p.user_id = u.user_id
@@ -70,14 +71,15 @@ const searchProjects = async (keywords, paging) => {
   const limitCount = paging * 6;
   const [keywordProducts] = await connection.query(sql, [likeString, likeString, likeString, 6, limitCount]);
   const [projectCounts] = await connection.execute(countSQL, [likeString, likeString, likeString]);
-  const allPage = Math.floor(projectCounts[0].count / 6) + 1;
+  const allPage = Math.ceil(projectCounts[0].count / 6);
   connection.release();
   return { projects: keywordProducts, page: paging + 1, allPage };
 };
 
 const getAllProjects = async (paging) => {
   const connection = await pool.getConnection();
-  const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, u.user_name as userName
+  const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, 
+  u.user_name as userName, u.user_id as userID
   FROM project as p
   LEFT JOIN user as u
   ON p.user_id = u.user_id 
@@ -129,7 +131,7 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
     connection.release();
     return {};
   }
-	console.log(selectResponse[0].versionID);
+  console.log(selectResponse[0].versionID);
   let fileID;
   const [fileResponse] = await connection.execute(latestFile, [selectResponse[0].versionID]);
   if (fileResponse.length !== 0) {
@@ -193,6 +195,20 @@ const updateStarCount = async (projectID) => {
   await pool.execute(sql, [projectID]);
 };
 
+const getTopThreeProjects = async () => {
+  const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, 
+  p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, 
+  u.user_name as userName, u.user_id as userID
+  FROM project as p
+  LEFT JOIN user as u
+  ON p.user_id = u.user_id 
+  WHERE is_public = 1
+  ORDER BY watch_count DESC
+  LIMIT 3`;
+  const [topThree] = await pool.execute(sql);
+  return topThree;
+};
+
 module.exports = {
   searchProjects,
   getAllProjects,
@@ -201,4 +217,5 @@ module.exports = {
   projectDetials,
   updateWatchCount,
   updateStarCount,
+  getTopThreeProjects,
 };

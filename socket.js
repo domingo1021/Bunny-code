@@ -7,7 +7,7 @@ const {
 } = require('./socket/battle');
 const { versionEditStatus, editVersion, unEditing } = require('./socket/editor');
 const { getUserByName } = require('./socket/user');
-const { compile } = require('./server/services/service');
+const { compile, leetCodeCompile } = require('./server/services/service');
 const Cache = require('./utils/cache');
 // const { writeRecord, queryRecord } = require('./server/controllers/codeRecord');
 
@@ -95,6 +95,7 @@ io.on('connection', async (socket) => {
     } else if (Cache.ready) {
       await Cache.set(`${socket.versionID}`, `${socket.id}`);
     }
+    socket.versionID = `version-${projectObject.versionID}`;
     // TODO: 存入 Redis, 表示某個 socket 正在編輯程式碼
     // Redis SET key = versionID, value = socketID
     console.log('status check responseObject: ', userObject);
@@ -175,7 +176,9 @@ io.on('connection', async (socket) => {
     const cacheObject = {};
     cacheObject[`${battlePayload.firstUserID}`] = JSON.stringify({ ready: 0, codes: '' });
     cacheObject[`${socket.user.id}`] = JSON.stringify({ ready: 0, codes: '' });
-    cacheObject.answer = answer;
+    answer.forEach((answerObject) => {
+      cacheObject[`${Object.keys(answerObject)[0]}`] = Object.values(answerObject)[0];
+    });
     const cacheBattleResult = await Cache.HSET(`${socket.battleID}`, cacheObject);
     if (cacheBattleResult) {
       io.to(socketID).emit('battleCreated', {
@@ -231,6 +234,10 @@ io.on('connection', async (socket) => {
     // user join battle socket room.
     let userCategory = CLIENT_CATEGORY.visitor;
     const battleResponse = await queryBattler(queryObject.battleID);
+    if (battleResponse === null) {
+      console.log('Battle finished alert');
+      socket.emit('battleFinished');
+    }
     if ([battleResponse.firstUserID, battleResponse.secondUserID].includes(socket.user.id)) {
       userCategory = CLIENT_CATEGORY.self;
     }
@@ -238,11 +245,14 @@ io.on('connection', async (socket) => {
     socket.join(socket.battleID);
     let battleObject = await Cache.HGETALL(`${socket.battleID}`);
     const { firstUserID, secondUserID, answer } = battleResponse;
+    // TODO: Set battle object if the battle not exists
     if (Object.keys(battleObject).length === 0) {
       const cacheObject = {};
-      cacheObject[firstUserID] = JSON.stringify({ ready: '0', codes: '' });
-      cacheObject[secondUserID] = JSON.stringify({ ready: '0', codes: '' });
-      cacheObject.answer = answer;
+      cacheObject[`${firstUserID}`] = JSON.stringify({ ready: 0, codes: '' });
+      cacheObject[`${secondUserID}`] = JSON.stringify({ ready: 0, codes: '' });
+      answer.forEach((answerObject) => {
+        cacheObject[`${Object.keys(answerObject)[0]}`] = Object.values(answerObject)[0];
+      });
       await Cache.HSET(`${socket.battleID}`, cacheObject);
       battleObject = cacheObject;
     }
@@ -283,49 +293,132 @@ io.on('connection', async (socket) => {
 
   socket.on('compile', async (queryObject) => {
     // TODO: 對照 compile result & answer
-    const answer = await Cache.hGet(`${socket.battleID}`, 'answer');
-    let compilerResult = await compile(queryObject.battlerNumber, queryObject.battleID, queryObject.codes);
+    // TODO: Answer for question 要先放好在 Redis 內 (JSON.stringify) --> write a CRUD question answers array function
+    // TODO: 如果 Answer wrong 直接回罐頭錯誤訊息，不用給後端 stderr message.
+    const battleObject = await Cache.hGetAll(`${socket.battleID}`);
+    const answers = [];
+    const answerIndex = [1, 2, 3, 4, 5];
+    answerIndex.forEach((index) => {
+      answers.push(JSON.parse(battleObject[`answer-${index}`]));
+    });
+    console.log(`Answers of ${queryObject.questionName}: `, answers);
+    const [compilerResult, resultStatus] = await leetCodeCompile(
+      queryObject.battlerNumber,
+      queryObject.battleID,
+      queryObject.codes,
+      queryObject.questionName,
+    );
+    console.log(`Compile results, status: ${resultStatus} result: ${compilerResult}`);
+
     // const compilerResult = '6';
+    // TODO: User limit count. --> 前端也必須擋使用者瘋狂按按鍵的問題
+    let corrections = [];
+    const jsonResult = [];
+
+    // check the answer;
+    try {
+      if (resultStatus === 'success') {
+        answers.forEach((answer, index) => {
+          let currAnswer = Object.values(answer)[0];
+          if (currAnswer.includes('[')) {
+            currAnswer = JSON.stringify(JSON.parse(currAnswer));
+          }
+          let result = JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"').replaceAll('undefined', 'null'))[index];
+          if (typeof result === 'object') {
+            result = JSON.stringify(result);
+          } else if (typeof result === 'number') {
+            result = `${result}`;
+          }
+          jsonResult.push(result);
+          corrections.push(currAnswer === result);
+        });
+      } else {
+        corrections = [false];
+        jsonResult.push(compilerResult);
+      }
+    } catch (error) {
+      console.log('error: ', error);
+      corrections.push(false);
+    }
+    // TODO: build the object that will send to frontend for correction display.
+    // Send user the test case which is wrong.
+    console.log('correction: ', corrections);
+    const testCase = [];
+    for (let i = 0; i < answers.length; i += 1) {
+      if (corrections[i]) {
+        testCase.push({ ...answers[i], 'Compile result': jsonResult[i] });
+      } else {
+        if (i > 2) {
+          testCase.push({
+            'Hided test case': 'answer',
+            'Compile result': 'Unexpected result',
+          });
+        } else {
+          testCase.push({ ...answers[i], 'Compile result': jsonResult[i] });
+        }
+        break;
+      }
+    }
     socket.to(socket.battleID).emit(
       'compileDone',
       {
         battlerNumber: queryObject.battlerNumber,
         compilerResult,
+        testCase,
       },
     );
     socket.emit('compileDone', {
       battlerNumber: queryObject.battlerNumber,
       compilerResult,
+      testCase,
     });
-    // TODO: split answer with \n
-    // TODO: check answer, for object, user JSON.stringify & parse to get unique format.
-    compilerResult = compilerResult.split('\n');
-    compilerResult.pop();
-    compilerResult = compilerResult.reduce((prev, curr) => {
-      prev += curr;
-      return prev;
-    }, '');
-    if (answer.includes('[') || answer.includes('{')) {
-      if (JSON.stringify(JSON.parse(answer)) !== JSON.stringify(JSON.parse(compilerResult))) {
-        return;
-      }
-    } else if (answer !== compilerResult) {
-      return;
+
+    // Check is the battler compiler all true, then tag as winner.
+    const isWinner = corrections.every((correction) => correction);
+    console.log('Winner status: ', isWinner);
+    if (isWinner) {
+      console.log(`The winner is ${socket.user.id}`);
+      await battleFinish(queryObject.battleID, socket.user.id);
+      await Cache.del(`${socket.battleID}`);
+      socket.to(socket.battleID).emit('battleOver', {
+        winnerID: socket.user.id,
+        winnerName: socket.user.name,
+        reason: `${socket.user.name} just compiled with the right answer`,
+      });
+      socket.emit('battleOver', {
+        winnerID: socket.user.id,
+        winnerName: socket.user.name,
+        reason: 'For just compiled with the right answer',
+      });
     }
-    console.log(`${socket.user.name} win the game`);
-    // update battle record  --> 1. winner id & finish.
-    await battleFinish(queryObject.battleID, socket.user.id);
-    await Cache.del(`${socket.battleID}`);
-    socket.to(socket.battleID).emit('battleOver', {
-      winnerID: socket.user.id,
-      winnerName: socket.user.name,
-      reason: `${socket.user.name} just compiled with the right answer`,
-    });
-    socket.emit('battleOver', {
-      winnerID: socket.user.id,
-      winnerName: socket.user.name,
-      reason: 'For just compiled with the right answer',
-    });
+    // TODO: check answer
+    // compilerResult = compilerResult.split('\n');
+    // compilerResult.pop();
+    // compilerResult = compilerResult.reduce((prev, curr) => {
+    //   prev += curr;
+    //   return prev;
+    // }, '');
+    // if (answer.includes('[') || answer.includes('{')) {
+    //   if (JSON.stringify(JSON.parse(answer)) !== JSON.stringify(JSON.parse(compilerResult))) {
+    //     return;
+    //   }
+    // } else if (answer !== compilerResult) {
+    //   return;
+    // }
+    // console.log(`${socket.user.name} win the game`);
+    // // update battle record  --> 1. winner id & finish.
+    // await battleFinish(queryObject.battleID, socket.user.id);
+    // await Cache.del(`${socket.battleID}`);
+    // socket.to(socket.battleID).emit('battleOver', {
+    //   winnerID: socket.user.id,
+    //   winnerName: socket.user.name,
+    //   reason: `${socket.user.name} just compiled with the right answer`,
+    // });
+    // socket.emit('battleOver', {
+    //   winnerID: socket.user.id,
+    //   winnerName: socket.user.name,
+    //   reason: 'For just compiled with the right answer',
+    // });
   });
 
   socket.on('getWinnerData', async (queryObject) => {
@@ -345,9 +438,7 @@ io.on('connection', async (socket) => {
           const socketID = await isolatedClient.get(`${socket.versionID}`);
           if (socketID !== null) {
             if (socketID === socket.id) {
-              console.log(`DB update edit status of version-${socket.versionID}`);
-              await unEditing(socket.versionID);
-              console.log(`redis delete socket with id ${socketID}`);
+              await unEditing(socket.versionID.split('-')[1]);
               isolatedClient.del(`${socket.versionID}`);
             }
           }

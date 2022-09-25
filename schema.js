@@ -124,20 +124,6 @@ const battleTable = `
   );
 `;
 
-const userRoleTable = `
-
-`;
-
-const roleTable = `
-`;
-
-const rolePermissionTable = `
-`;
-
-const permissionTable = `
-
-`;
-
 const question = `
   CREATE TABLE IF NOT EXISTS question(
     question_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -146,6 +132,18 @@ const question = `
     question_level TINYINT(1) NOT NULL,
     answer VARCHAR(50) NOT NULL,
     PRIMARY KEY question_id
+  );
+`;
+
+const answer = `
+  CREATE TABLE IF NOT EXISTS answer(
+    answer_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    answer_number INT NOT NULL,
+    test_case VARCHAR(100) NOT NULL,
+    output VARCHAR(50) NOT NULL,
+    question_id INT UNSIGNED NOT NULL,
+    FOREIGN KEY (question_id) REFERENCES question(question_id),
+    PRIMARY KEY (answer_id)
   );
 `;
 

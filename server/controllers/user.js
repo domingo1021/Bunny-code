@@ -107,17 +107,24 @@ const getUserProjects = async (req, res) => {
   } catch (error) {
     userPayload = { id: -1 };
   }
-  console.log(userPayload, userID);
+  let { keyword } = req.query;
+  const paging = +req.query.paging || 0;
+  if (!keyword) {
+    keyword = '';
+  }
+  if (paging < 0) {
+    return res.status(400).json({ msg: 'Invalid query string. ' });
+  }
   let projects;
   try {
     if (userID === userPayload.id) {
-      projects = await User.getUserProjects(userID, 'all');
+      projects = await User.getUserProjects(userID, 'all', keyword, paging);
     } else {
-      projects = await User.getUserProjects(userID, 'public');
+      projects = await User.getUserProjects(userID, 'public', keyword, paging);
     }
   } catch (error) {
     console.log(error);
-    return res.stauts(400).json({ msg: 'well' });
+    return res.status(400).json({ msg: 'Invalid query string. ' });
   }
   return res.status(200).json({ data: projects });
 };
@@ -166,6 +173,23 @@ const getUserByName = async (req, res) => {
   });
 };
 
+const getUserDetail = async (req, res) => {
+  const { userID } = req.params;
+  if (!+userID) {
+    return res.status(400).json({
+      msg: 'Invalid user id',
+    });
+  }
+  const userDetail = await User.getUserDetailByID(userID);
+  if (!userDetail) {
+    return res.status(404).json({ msg: 'User not found.' });
+  }
+  userDetail.picture = process.env.AWS_DISTRIBUTION_NAME + userDetail.picture;
+  return res.status(200).json({
+    data: userDetail,
+  });
+};
+
 module.exports = {
   userSignUp,
   userSignIn,
@@ -174,4 +198,5 @@ module.exports = {
   authResponse,
   userIDResponse,
   getUserByName,
+  getUserDetail,
 };
