@@ -345,7 +345,7 @@ io.on('connection', async (socket) => {
     const testCase = [];
     for (let i = 0; i < answers.length; i += 1) {
       if (corrections[i]) {
-        testCase.push(answers[i], { 'Compile result': compilerResult[i] });
+        testCase.push(answers[i], { 'Compile result': jsonResult[i] });
       } else {
         testCase.push(answers[i], { 'Compiler result': 'Error' });
         break;
