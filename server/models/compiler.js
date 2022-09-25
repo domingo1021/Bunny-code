@@ -9,6 +9,7 @@ const writeFile = async (fileName, fileURL, log, versionID) => {
   const insertSQL = 'INSERT INTO file (file_name, file_url, log, version_id) VALUES(?, ?, ?, ?)';
   await connection.execute(updateFileStatus, [versionID, fileName]);
   await connection.execute(insertSQL, [fileName, fileURL, log, versionID]);
+  connection.release();
 };
 
 const writeRecord = async (versionID, baseURL, startTime, endTime) => {
@@ -17,6 +18,7 @@ const writeRecord = async (versionID, baseURL, startTime, endTime) => {
   const [selectResult] = await connection.execute(selectSQL, [versionID]);
   console.log('selectionResult: ', selectResult);
   if (selectResult.length !== 0) {
+    connection.release();
     throw new Exeception('Duplicated record in a version.', 400);
   }
   const insertSQL = 'INSERT INTO record (version_id, base_url, start_time, end_time) VALUES (?, ?, ?, ?);';

@@ -14,6 +14,7 @@ const queryBattler = async (battleID) => {
   const [firstUser] = await connection.execute(sqlFirst, [battleID]);
   if (firstUser[0].isFinish === 1) {
     // TODO: say the battle had already been finished.
+    connection.release;
     return null;
   }
   const [secondUser] = await connection.execute(sqlSecond, [battleID]);

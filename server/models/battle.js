@@ -97,6 +97,7 @@ const getBattlesByUser = async (keyword, status, paging) => {
   const limitCount = paging * 6;
   const [targetUser] = await connection.execute(searchUserSQL, [likeString]);
   if (targetUser.length === 0) {
+    connection.release();
     return [];
   }
   const [battleOne] = await connection.query(userOneSQL, [status, targetUser[0].userID, targetUser[0].userID, 6, limitCount]);
