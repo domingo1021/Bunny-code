@@ -301,15 +301,14 @@ io.on('connection', async (socket) => {
     answerIndex.forEach((index) => {
       answers.push(JSON.parse(battleObject[`answer-${index}`]));
     });
-    // console.log(`Answers of ${queryObject.questionName}: `, answers);
+    console.log(`Answers of ${queryObject.questionName}: `, answers);
     const [compilerResult, resultStatus] = await leetCodeCompile(
       queryObject.battlerNumber,
       queryObject.battleID,
       queryObject.codes,
       queryObject.questionName,
     );
-	  // console.log(`|||${compilerResult.replace('\n', '')}|||`);
-    // console.log(`Compile results, status: ${resultStatus} result: ${compilerResult}`);
+    console.log(`Compile results, status: ${resultStatus} result: ${compilerResult}`);
 
     // const compilerResult = '6';
     // TODO: User limit count. --> 前端也必須擋使用者瘋狂按按鍵的問題
