@@ -17,7 +17,7 @@ const getBattles = async (req, res) => {
   if (status === 'finished') {
     isFinish = 1;
   }
-  if (!+paging) {
+  if (!+paging || +paging < 0) {
     paging = 0;
   }
   let firstBattler;
