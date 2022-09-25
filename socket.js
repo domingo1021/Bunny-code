@@ -312,36 +312,37 @@ io.on('connection', async (socket) => {
     // console.log(`Compile results, status: ${resultStatus} result: ${compilerResult}`);
 
     // const compilerResult = '6';
-    if (resultStatus === 'failed') {
-      // TODO: User limit count. --> 前端也必須擋使用者瘋狂按按鍵的問題
-      // console.log('failed.');
-      console.log('Compile failed. ');
-      return;
+    // TODO: User limit count. --> 前端也必須擋使用者瘋狂按按鍵的問題
+    let corrections = [];
+    if (resultStatus === 'success') {
+      corrections = answers.map((answer, index) => {
+        let currAnswer = Object.values(answer)[0];
+        if (currAnswer.includes('[')) {
+          currAnswer = JSON.stringify(JSON.parse(currAnswer));
+        }
+        let result = JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index];
+        if (typeof result === 'object') {
+          result = JSON.stringify(result);
+        } else if (typeof result === 'number') {
+          result = `${result}`;
+        }
+        return currAnswer === result;
+      });
+    } else {
+      corrections = [false];
     }
 
     // check the answer
-    const corrections = answers.map((answer, index) => {
-      let currAnswer = Object.values(answer)[0];
-      if (currAnswer.includes('[')) {
-        currAnswer = JSON.stringify(JSON.parse(currAnswer));
-      }
-      let result = JSON.parse(compilerResult.replaceAll('\n', '').replaceAll("'", '"'))[index];
-      if (typeof result === 'object') {
-        result = JSON.stringify(result);
-      } else if (typeof result === 'number') {
-        result = `${result}`;
-      }
-      return currAnswer === result;
-    });
 
     // TODO: build the object that will send to frontend for correction display.
     // Send user the test case which is wrong.
     console.log('correction: ', corrections);
     const testCase = [];
     for (let i = 0; i < answers.length; i += 1) {
-      testCase.push(Object.keys(answers[i])[0]);
-      if (!corrections[i]) {
-        break;
+      if (corrections[i]) {
+        testCase.push(answers[i], { 'Compile result': compilerResult[i] });
+      } else {
+        testCase.push(answers[i], { 'Compiler result': 'Error' });
       }
     }
     socket.to(socket.battleID).emit(
