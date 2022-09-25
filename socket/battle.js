@@ -110,7 +110,7 @@ const addBattleWatch = async (battleID) => {
 const getWinnerData = async (battleID) => {
   const winnerSQL = `
     SELECT b.battle_name as battleName, b.watch_count as watchCount, b.winner_id as winnerID, b.winner_url as winnerURL, 
-    b.question_id as questionID, q.question_name as questionName, q.question_url as questionURL, q.question_level as level
+    b.question_id as questionID, q.question_name as questionName, q.question_url as questionURL, q.question_level as level,
     u.user_name as userName, u.email, u.profile as profile, u.picture, u.level as userLevel
     FROM battle as b, question as q, user as u
     WHERE b.battle_id = ? AND b.winner_id = u.user_id AND b.question_id = q.question_id;
