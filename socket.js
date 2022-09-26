@@ -142,7 +142,8 @@ io.on('connection', async (socket) => {
       await Cache.HDEL(`${socket.id}`, `${socket.user.id}`);
     }, 20000);
     if (redisResult) {
-      socket.broadcast.emit('userInvite', battleObject);
+      io.emit('userInvite', battleObject);
+      // socket.broadcast.emit('userInvite', battleObject);
     }
     // await Cache.HGETALL()
     // TODO: send message to all io socket message
