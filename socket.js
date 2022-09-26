@@ -137,16 +137,16 @@ io.on('connection', async (socket) => {
     };
     const redisGet = await Cache.hGetAll(`${socket.id}`);
     if (Object.keys(redisGet)[0]) {
-      console.log('User too many request !');
-      socket.emit('inviteFailed', 'Pleas wait for 20 seconds for another invitation.');
+      console.log(`User ${socket.id} too many request !`);
+      socket.emit('inviteFailed', 'Pleas wait for 10 seconds for another invitation.');
       return;
     }
     const redisResult = await Cache.HSETNX(`${socket.id}`, `${socket.user.id}`, JSON.stringify(battleObject));
     setTimeout(async () => {
-      // set delete hash after 20 seconds.
+      // set delete hash after 10 seconds.
       console.log(`ready to delete tmp battle with socket id key ${socket.id}`);
       await Cache.HDEL(`${socket.id}`, `${socket.user.id}`);
-    }, 20000);
+    }, 10000);
     if (redisResult) {
       io.emit('userInvite', battleObject);
     }
