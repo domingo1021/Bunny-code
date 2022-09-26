@@ -80,7 +80,7 @@ function preProcessCodes(codes, questionName) {
 }
 
 async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
-  const processedCodes = preProcessCodes(codes);
+  const processedCodes = preProcessCodes(codes, questionName);
   const tmpTime = Date.now();
   const tmpFileName = `battle_tmp_codes/${battlerNumber}_${userID}_${tmpTime}.js`;
   const battleCodeRoute = `./docker_tool/${tmpFileName}`;
