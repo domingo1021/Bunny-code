@@ -430,7 +430,7 @@ io.on('connection', async (socket) => {
           for (let i = 0; i < userValues.length; i += 1) {
             const { ready } = JSON.parse(userValues[i]);
             console.log('ready: ', ready);
-            if (ready === '0') {
+            if (ready === 0) {
               return;
             }
           }
