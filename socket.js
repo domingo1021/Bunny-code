@@ -135,6 +135,12 @@ io.on('connection', async (socket) => {
       firstUserName: socket.user.name,
 
     };
+    const redisGet = await Cache.hGetAll(`${socket.id}`);
+    if (redisGet !== null) {
+      console.log('User too many request !');
+      socket.emit('inviteFailed', 'Pleas wait for 20 seconds for another invitation.');
+      return;
+    }
     const redisResult = await Cache.HSETNX(`${socket.id}`, `${socket.user.id}`, JSON.stringify(battleObject));
     setTimeout(async () => {
       // set delete hash after 20 seconds.
@@ -143,16 +149,7 @@ io.on('connection', async (socket) => {
     }, 20000);
     if (redisResult) {
       io.emit('userInvite', battleObject);
-      // socket.broadcast.emit('userInvite', battleObject);
     }
-    // await Cache.HGETALL()
-    // TODO: send message to all io socket message
-    // userID, name (socket.user.id, socket.user.name)發起了挑戰
-    // store user define battle info into redis.
-    // Battle ID 設定為一串代碼 (發起人的 socket.id ??); --> NX
-    // broadcast message to all socket. 某某人(user.name)發起挑戰
-    // TODO: 只有在成功放進句 Redis 時才會 emit 到其他用戶 （NX）
-    // TODO: emit socket id to all user (get redis hash key);
   });
 
   socket.on('acceptBattle', async (emitObject) => {
