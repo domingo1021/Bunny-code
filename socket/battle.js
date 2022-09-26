@@ -127,6 +127,13 @@ const getWinnerData = async (battleID) => {
   return winnerObject[0];
 };
 
+const deleteBattle = async (battleID) => {
+  const deleteSQL = `
+    UPDATE battle SET deleted = 1 WHERE battle_id = ?;
+  `;
+  await pool.execute(deleteSQL, [battleID]);
+};
+
 module.exports = {
   queryBattler,
   createBattle,
@@ -135,4 +142,5 @@ module.exports = {
   battleFinish,
   addBattleWatch,
   getWinnerData,
+  deleteBattle,
 };
