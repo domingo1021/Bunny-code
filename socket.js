@@ -391,34 +391,6 @@ io.on('connection', async (socket) => {
         reason: 'For just compiled with the right answer',
       });
     }
-    // TODO: check answer
-    // compilerResult = compilerResult.split('\n');
-    // compilerResult.pop();
-    // compilerResult = compilerResult.reduce((prev, curr) => {
-    //   prev += curr;
-    //   return prev;
-    // }, '');
-    // if (answer.includes('[') || answer.includes('{')) {
-    //   if (JSON.stringify(JSON.parse(answer)) !== JSON.stringify(JSON.parse(compilerResult))) {
-    //     return;
-    //   }
-    // } else if (answer !== compilerResult) {
-    //   return;
-    // }
-    // console.log(`${socket.user.name} win the game`);
-    // // update battle record  --> 1. winner id & finish.
-    // await battleFinish(queryObject.battleID, socket.user.id);
-    // await Cache.del(`${socket.battleID}`);
-    // socket.to(socket.battleID).emit('battleOver', {
-    //   winnerID: socket.user.id,
-    //   winnerName: socket.user.name,
-    //   reason: `${socket.user.name} just compiled with the right answer`,
-    // });
-    // socket.emit('battleOver', {
-    //   winnerID: socket.user.id,
-    //   winnerName: socket.user.name,
-    //   reason: 'For just compiled with the right answer',
-    // });
   });
 
   socket.on('getWinnerData', async (queryObject) => {
@@ -446,37 +418,38 @@ io.on('connection', async (socket) => {
       }
     }
     console.log(socket.category, socket.battleID);
-    if (socket.category === 'battle' && socket.battleID !== undefined) {
-      // TODO: Check cache, if is battler, then battle over.
-      if (Cache.ready) {
-        await Cache.executeIsolated(async (isolatedClient) => {
-          const battleID = socket.battleID.split('-')[1];
-          await isolatedClient.watch(battleID);
-          const battleObject = await isolatedClient.HGETALL(socket.battleID);
-          const userIDs = Object.keys(battleObject);
-          const userValues = Object.values(battleObject);
-          for (let i = 0; i < userValues.length; i += 1) {
-            const { ready } = JSON.parse(userValues[i]);
-            console.log('ready: ', ready);
-            if (ready === '0') {
-              return;
-            }
-          }
-          if (userIDs.includes(`${socket.user.id}`)) {
-            userIDs.splice(userIDs.indexOf(`${socket.user.id}`), 1);
-            const winnerUser = await battleFinish(battleID, userIDs[0]);
-            console.log(winnerUser);
-            await isolatedClient.del(socket.battleID);
-            console.log('battleOver');
-            socket.to(socket.battleID).emit('battleOver', {
-              winnerID: winnerUser.winnerID,
-              winnerName: winnerUser.winnerName,
-              reason: `${socket.user.name} just leave the battle.`,
-            });
-          }
-        });
-      }
-    }
+    // if (socket.category === 'battle' && socket.battleID !== undefined) {
+    //   // TODO: Check cache, if is battler, then battle over.
+    //   if (Cache.ready) {
+    //     await Cache.executeIsolated(async (isolatedClient) => {
+    //       const battleID = socket.battleID.split('-')[1];
+    //       await isolatedClient.watch(battleID);
+    //       const battleObject = await isolatedClient.HGETALL(socket.battleID);
+    //       const userIDs = Object.keys(battleObject);
+    //       const userValues = Object.values(battleObject);
+    //       for (let i = 0; i < userValues.length; i += 1) {
+    //         const { ready } = JSON.parse(userValues[i]);
+    //         console.log('ready: ', ready);
+    //         if (ready === '0') {
+    //           return;
+    //         }
+    //       }
+    //       if (userIDs.includes(`${socket.user.id}`)) {
+    //         userIDs.splice(userIDs.indexOf(`${socket.user.id}`), 1);
+    //         // TODO: battle terminal --> battle deleted
+    //         const winnerUser = await battleFinish(battleID, userIDs[0]);
+    //         console.log(winnerUser);
+    //         await isolatedClient.del(socket.battleID);
+    //         console.log('battleOver');
+    //         socket.to(socket.battleID).emit('battleOver', {
+    //           winnerID: winnerUser.winnerID,
+    //           winnerName: winnerUser.winnerName,
+    //           reason: `${socket.user.name} just leave the battle.`,
+    //         });
+    //       }
+    //     });
+    //   }
+    // }
     // check if user in battle room, otherwise, update user project status to unediting.
     console.log(`#${socket.user.id} user disconnection.`);
   });
