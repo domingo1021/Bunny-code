@@ -79,7 +79,7 @@ const userSignUp = async (req, res) => {
   // JWT token
   const payload = {
     id: userID,
-    name: user.name,
+    name: user.user_name,
     email: user.email,
     provider: 'native',
   };
