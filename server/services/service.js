@@ -58,11 +58,33 @@ async function compile(userID, fileName, codes) {
   return compilerResult;
 }
 
+function preProcessCodes(codes, questionName) {
+  let newCodes = codes;
+  switch (questionName) {
+    case 'Two sum': {
+      newCodes += '\n module.exports = { twoSum };';
+      break;
+    }
+    case 'Hello world': {
+      newCodes += '\n module.exports = { helloWorld };';
+      break;
+    }
+    case 'Longest common subsequence': {
+      newCodes += '\n module.exports = { getLCS };';
+      break;
+    }
+    default:
+      break;
+  }
+  return newCodes;
+}
+
 async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
+  const processedCodes = preProcessCodes(codes);
   const tmpTime = Date.now();
   const tmpFileName = `battle_tmp_codes/${battlerNumber}_${userID}_${tmpTime}.js`;
   const battleCodeRoute = `./docker_tool/${tmpFileName}`;
-  fs.writeFileSync(battleCodeRoute, codes);
+  fs.writeFileSync(battleCodeRoute, processedCodes);
   let compilerResults;
   let resultStatus;
   switch (questionName) {
