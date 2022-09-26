@@ -136,7 +136,7 @@ io.on('connection', async (socket) => {
 
     };
     const redisGet = await Cache.hGetAll(`${socket.id}`);
-    if (redisGet !== null) {
+    if (Object.keys(redisGet)[0]) {
       console.log('User too many request !');
       socket.emit('inviteFailed', 'Pleas wait for 20 seconds for another invitation.');
       return;
