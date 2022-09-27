@@ -86,7 +86,7 @@ const getAllProjects = async (paging) => {
   WHERE p.deleted = 0 AND p.is_public = 1
   ORDER BY create_at DESC
   LIMIT ? OFFSET ?`;
-  const countSQL = 'SELECT count(project_id) as count FROM project WHERE p.deleted = 0 AND is_public = 1;';
+  const countSQL = 'SELECT count(project_id) as count FROM project WHERE deleted = 0 AND is_public = 1;';
   const limitCount = paging * 6;
   const [allProject] = await connection.query(sql, [6, limitCount]);
   const [projectCounts] = await connection.execute(countSQL);
