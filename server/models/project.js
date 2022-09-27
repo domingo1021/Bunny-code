@@ -56,7 +56,7 @@ const searchProjects = async (keywords, paging) => {
   FROM project as p
   LEFT JOIN user as u
   ON p.user_id = u.user_id
-  WHERE p.is_public = 1 AND (p.project_name LIKE ? OR p.project_description LIKE ? OR u.user_name LIKE ?)
+  WHERE p.deleted = 0, p.is_public = 1 AND (p.project_name LIKE ? OR p.project_description LIKE ? OR u.user_name LIKE ?)
   ORDER BY create_at DESC
   LIMIT ? OFFSET ?
   `;
@@ -65,7 +65,7 @@ const searchProjects = async (keywords, paging) => {
   FROM project as p
   LEFT JOIN user as u
   ON p.user_id = u.user_id
-  WHERE is_public = 1 AND (p.project_name LIKE ? OR p.project_description LIKE ? OR u.user_name LIKE ?);`;
+  WHERE p.deleted = 0, is_public = 1 AND (p.project_name LIKE ? OR p.project_description LIKE ? OR u.user_name LIKE ?);`;
   const connection = await pool.getConnection();
   const likeString = `%${keywords}%`;
   const limitCount = paging * 6;
@@ -83,10 +83,10 @@ const getAllProjects = async (paging) => {
   FROM project as p
   LEFT JOIN user as u
   ON p.user_id = u.user_id 
-  WHERE is_public = 1
+  WHERE p.deleted = 0, p.is_public = 1
   ORDER BY create_at DESC
   LIMIT ? OFFSET ?`;
-  const countSQL = 'SELECT count(project_id) as count FROM project WHERE is_public = 1;';
+  const countSQL = 'SELECT count(project_id) as count FROM project WHERE p.deleted = 0, is_public = 1;';
   const limitCount = paging * 6;
   const [allProject] = await connection.query(sql, [6, limitCount]);
   const [projectCounts] = await connection.execute(countSQL);
@@ -202,7 +202,7 @@ const getTopThreeProjects = async () => {
   FROM project as p
   LEFT JOIN user as u
   ON p.user_id = u.user_id 
-  WHERE is_public = 1
+  WHERE p.deleted = 0, p.is_public = 1
   ORDER BY watch_count DESC
   LIMIT 3`;
   const [topThree] = await pool.execute(sql);
