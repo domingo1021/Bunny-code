@@ -166,7 +166,11 @@ io.on('connection', async (socket) => {
     }
     const battlePayload = JSON.parse(battleObject[`${firstUserID}`]);
     // TODO: Create a battle in MySQL.
-    const { battleID, answer } = await createBattle(battlePayload.name, battlePayload.level, battlePayload.firstUserID, socket.user.id);
+    const { battleID, answer, created } = await createBattle(battlePayload.name, battlePayload.level, battlePayload.firstUserID, socket.user.id);
+    if (!created) {
+      socket.emit('battleFailed', 'Battle name already exist.');
+      return;
+    }
     socket.battleID = `battle-${battleID}`;
     // TODO: Update redis data --> wait for two battlers to ready
     // TODO: set hash: key- battleID, field - user_1, user_2, answer, and value accordingly.

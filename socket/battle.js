@@ -65,9 +65,15 @@ const createBattle = async (battleName, battleLevel, firstUserID, secondUserID) 
   const battleSQL = `
   INSERT INTO battle (battle_name, first_user_id, second_user_id, question_id) 
   VALUES (?, ?, ?, ?)`;
-  const [createResult] = await connection.execute(battleSQL, [battleName, firstUserID, secondUserID, questionID]);
+  let battleID;
+  try {
+    const [createResult] = await connection.execute(battleSQL, [battleName, firstUserID, secondUserID, questionID]);
+    battleID = createResult.insertID;
+  } catch (error) {
+    return { created: false };
+  }
   connection.release();
-  return { battleID: createResult.insertId, answer };
+  return { battleID, answer, created: true };
 };
 
 const getInvitations = async (userID) => {
