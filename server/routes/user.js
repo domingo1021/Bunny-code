@@ -52,7 +52,7 @@ router.route('/user/:userID/project').get(getUserProjects).post(
   [
     body('projectName').custom((projectName) => {
       if (!validateNormalName(projectName)) {
-        throw new Error('Invalid project name.');
+        throw new Error('Project name should only include number, alphabet, dot or _ .');
       } return true;
     }),
     body('projectDescription').custom((description) => {
@@ -62,12 +62,12 @@ router.route('/user/:userID/project').get(getUserProjects).post(
     }),
     body('versionName').custom((versionName) => {
       if (!validateNormalName(versionName)) {
-        throw new Error('Invalid version name,');
+        throw new Error('Version name should only include number, alphabet, dot or _ .');
       } return true;
     }),
     body('fileName').custom((fileName) => {
       if (!validateNormalName(fileName)) {
-        throw new Error('Invalid file name');
+        throw new Error('File name should only include number, alphabet, dot or _ .');
       } return true;
     }),
     body('isPublic').custom((isPublic) => {
