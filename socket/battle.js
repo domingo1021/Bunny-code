@@ -68,7 +68,7 @@ const createBattle = async (battleName, battleLevel, firstUserID, secondUserID) 
   let battleID;
   try {
     const [createResult] = await connection.execute(battleSQL, [battleName, firstUserID, secondUserID, questionID]);
-    battleID = createResult.insertID;
+    battleID = createResult.insertId;
   } catch (error) {
     return { created: false };
   }
