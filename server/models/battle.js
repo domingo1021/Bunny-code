@@ -1,10 +1,5 @@
 const pool = require('../../utils/rmdb');
 
-const createBattle = async () => {
-  console.log('DB creating battle');
-  return '';
-};
-
 const getBattles = async (keyword, status, paging) => {
   const userOneSQL = `
   SELECT b.battle_id as battleID, b.battle_name as battleName, b.watch_count as watchCount,
@@ -122,7 +117,6 @@ const ifBattleExists = async (battleName) => {
 };
 
 module.exports = {
-  createBattle,
   getBattles,
   writeBattleFile,
   ifBattleExists,

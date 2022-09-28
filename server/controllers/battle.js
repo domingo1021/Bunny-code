@@ -1,12 +1,6 @@
 require('dotenv').config();
 const Battle = require('../models/battle');
 
-const createBattle = async (req, res) => {
-  console.log('creating..');
-  await Battle.createBattle();
-  return res.status(200).send('battle created');
-};
-
 const getBattles = async (req, res) => {
   const { status, type } = req.query;
   let { keyword, paging } = req.query;
@@ -59,7 +53,7 @@ const ifBattleExists = async (req, res) => {
       msg: 'Battle name should not be larger than 30 characters.',
     });
   }
-  // TODO: check battle detail.
+  // check battle detail.
   const checkExists = await Battle.ifBattleExists(battleName);
   if (checkExists === 1) {
     return res.status(400).json({
@@ -72,5 +66,5 @@ const ifBattleExists = async (req, res) => {
 };
 
 module.exports = {
-  createBattle, getBattles, ifBattleExists,
+  getBattles, ifBattleExists,
 };

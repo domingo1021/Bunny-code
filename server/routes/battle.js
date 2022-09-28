@@ -1,9 +1,9 @@
 const express = require('express');
-const { createBattle, getBattles, ifBattleExists } = require('../controllers/battle');
+const { getBattles, ifBattleExists } = require('../controllers/battle');
 
 const router = express.Router();
 
-router.route('/battle').get(getBattles).post(createBattle);
+router.route('/battle').get(getBattles);
 
 router.get('/battle/:battleName', ifBattleExists);
 
