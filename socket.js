@@ -176,8 +176,8 @@ io.on('connection', async (socket) => {
     // TODO: set hash: key- battleID, field - user_1, user_2, answer, and value accordingly.
     await Cache.HDEL(`${socketID}`, `${firstUserID}`);
     const cacheObject = {};
-    cacheObject[`${battlePayload.firstUserID}`] = JSON.stringify({ ready: 0, codes: '' });
-    cacheObject[`${socket.user.id}`] = JSON.stringify({ ready: 0, codes: '' });
+    cacheObject[`${battlePayload.firstUserID}`] = JSON.stringify({ ready: 0, codes: '', chance: 3 });
+    cacheObject[`${socket.user.id}`] = JSON.stringify({ ready: 0, codes: '', chance: 3 });
     answer.forEach((answerObject) => {
       cacheObject[`${Object.keys(answerObject)[0]}`] = Object.values(answerObject)[0];
     });
@@ -220,14 +220,6 @@ io.on('connection', async (socket) => {
     }
   });
 
-  socket.on('checkAnswer', () => {
-    // TODO: check answer 剩餘次數 -1.
-    // TODO: Compile user code.
-    // TODO: Check user code with answer. ---> 撈 DB.
-    // TODO: if (compile result === answer) ---> 發送比賽結束訊息給使用者.
-    // TODO: 前端收到比賽結束 --> 上傳程式碼給後端.
-  });
-
   // for battle
   socket.on('queryBattler', async (queryObject) => {
     socket.category = 'battle';
@@ -251,14 +243,6 @@ io.on('connection', async (socket) => {
     if (Object.keys(battleObject).length === 0) {
       socket.emit('battleNotFound');
       return;
-      // const cacheObject = {};
-      // cacheObject[`${firstUserID}`] = JSON.stringify({ ready: 0, codes: '' });
-      // cacheObject[`${secondUserID}`] = JSON.stringify({ ready: 0, codes: '' });
-      // answer.forEach((answerObject) => {
-      //   cacheObject[`${Object.keys(answerObject)[0]}`] = Object.values(answerObject)[0];
-      // });
-      // await Cache.HSET(`${socket.battleID}`, cacheObject);
-      // battleObject = cacheObject;
     }
     if (![firstUserID, secondUserID].includes(socket.user.id)) {
       await addBattleWatch(queryObject.battleID);
@@ -275,7 +259,6 @@ io.on('connection', async (socket) => {
   });
 
   socket.on('newCodes', async (recordObject) => {
-    console.log(`New user code in ${socket.battleID}: ${recordObject.newCodes}`);
     await Cache.executeIsolated(async (isolatedClient) => {
       await isolatedClient.watch(socket.battleID);
       const battlerInfo = await isolatedClient.HGET(`${socket.battleID}`, `${socket.user.id}`);
@@ -301,22 +284,27 @@ io.on('connection', async (socket) => {
     // TODO: Answer for question 要先放好在 Redis 內 (JSON.stringify) --> write a CRUD question answers array function
     // TODO: 如果 Answer wrong 直接回罐頭錯誤訊息，不用給後端 stderr message.
     const battleObject = await Cache.hGetAll(`${socket.battleID}`);
+    const currentUserObject = JSON.parse(battleObject[`${socket.user.id}`]);
+    console.log('Current User Object: ', currentUserObject);
+    if (currentUserObject.chance === 0) {
+      return;
+    }
+    currentUserObject.chance -= 1;
+    // Set back object to Redis cache.
+    await Cache.HSET(`${socket.battleID}`, `${socket.user.id}`, JSON.stringify(currentUserObject));
     const answers = [];
     const answerIndex = [1, 2, 3, 4, 5];
     answerIndex.forEach((index) => {
       answers.push(JSON.parse(battleObject[`answer-${index}`]));
     });
-    console.log(`Answers of ${queryObject.questionName}: `, answers);
     const [compilerResult, resultStatus] = await leetCodeCompile(
       queryObject.battlerNumber,
       queryObject.battleID,
       queryObject.codes,
       queryObject.questionName,
     );
-    console.log(`Compile results, status: ${resultStatus} result: ${compilerResult}`);
 
-    // const compilerResult = '6';
-    // TODO: User limit count. --> 前端也必須擋使用者瘋狂按按鍵的問題
+    // User limit count. --> 前端也必須擋使用者瘋狂按按鍵的問題
     let corrections = [];
     const jsonResult = [];
 
@@ -370,12 +358,14 @@ io.on('connection', async (socket) => {
         battlerNumber: queryObject.battlerNumber,
         compilerResult,
         testCase,
+        compileChance: currentUserObject.chance,
       },
     );
     socket.emit('compileDone', {
       battlerNumber: queryObject.battlerNumber,
       compilerResult,
       testCase,
+      compileChance: currentUserObject.chance,
     });
 
     // Check is the battler compiler all true, then tag as winner.
