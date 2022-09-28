@@ -385,6 +385,15 @@ io.on('connection', async (socket) => {
         winnerName: socket.user.name,
         reason: 'For just compiled with the right answer',
       });
+    } else if (!isWinner && currentUserObject.chance === 0) {
+      await battleFinish(queryObject.battleID, socket.user.id);
+      await Cache.del(`${socket.battleID}`);
+      socket.to(socket.battleID).emit('battleTerminate', {
+        reason: `${socket.user.name} just ran out of compile chance`,
+      });
+      socket.emit('battleTerminate', {
+        reason: `${socket.user.name} just ran out of compile chance`,
+      });
     }
   });
 
