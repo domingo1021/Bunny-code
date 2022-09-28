@@ -251,8 +251,16 @@ io.on('connection', async (socket) => {
       battleResponse,
       userID: socket.user.id,
       category: userCategory,
-      firstUserReady: JSON.parse(battleObject[`${battleResponse.firstUserID}`]).ready,
-      secondUserReady: JSON.parse(battleObject[`${battleResponse.secondUserID}`]).ready,
+      firstUserObject: {
+        ready: JSON.parse(battleObject[`${battleResponse.firstUserID}`]).ready,
+        codes: JSON.parse(battleObject[`${battleResponse.firstUserID}`]).codes,
+        chance: JSON.parse(battleObject[`${battleResponse.firstUserID}`]).chance,
+      },
+      secondUserObject: {
+        ready: JSON.parse(battleObject[`${battleResponse.secondUserID}`]).ready,
+        codes: JSON.parse(battleObject[`${battleResponse.secondUserID}`]).codes,
+        chance: JSON.parse(battleObject[`${battleResponse.secondUserID}`]).chance,
+      },
     });
     console.log('prepare to send room msg');
     socket.to(socket.battleID).emit('in', `user #${socket.user.id} come in.`);
