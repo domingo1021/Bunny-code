@@ -54,7 +54,6 @@ const ifBattleExists = async (req, res) => {
     const errorMessage = errors.array()[0].msg;
     return res.status(400).json({ msg: errorMessage });
   }
-  console.log('errors: ', errors);
 
   // check battle detail.
   const { battleName } = req.params;
