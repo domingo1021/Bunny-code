@@ -1,4 +1,5 @@
 require('dotenv').config();
+const validator = require('express-validator');
 const Project = require('../models/project');
 const Exception = require('../services/execption');
 
@@ -100,13 +101,18 @@ const getProejctVersions = async (req, res) => {
 const createProjectVersion = async (req, res) => {
   const { projectID } = req.params;
   const { versionName, fileName } = req.body;
+  const errors = validator.validationResult(req);
+  if (!errors.isEmpty()) {
+    const errorMessage = errors.array()[0].msg;
+    return res.status(400).json({ msg: errorMessage });
+  }
   if (!projectID || !versionName || !fileName) {
     return res.status(400).json({ msg: 'Lake of data' });
   }
   const responseObject = await Project.createProjectVersion(versionName, fileName, +projectID);
-  if (responseObject === {}) {
+  if (responseObject.msg !== undefined) {
     console.log('return 400.');
-    return res.status(400).json({ msg: 'Invalid data.' });
+    return res.status(responseObject.status).json({ msg: responseObject.msg });
   }
   return res.status(201).json({ data: { ...responseObject } });
 };

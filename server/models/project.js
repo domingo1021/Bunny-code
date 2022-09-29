@@ -100,11 +100,10 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
   const connection = await pool.getConnection();
   await connection.beginTransaction();
   const getVersionNumber = `
-  SELECT  v.version_id as versionID, v.version_number as versionNumber
+  SELECT  v.version_id as versionID, v.version_name as versionName, v.version_number as versionNumber
   FROM version as v 
   WHERE project_id = ?
-  ORDER BY v.version_id DESC
-  LIMIT 1;`;
+  ORDER BY v.version_id DESC`;
   const createVersionSQL = 'INSERT INTO version (version_name, version_number, project_id) VALUES (?, ?, ?);';
   const latestFile = `
   SELECT file_name as fileName, file_url as fileUrl, log 
@@ -115,6 +114,13 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
   const defaultFile = `
   INSERT INTO file (file_name, file_url, log, version_id) VALUES (?, ?, ?, ?)`;
   const [selectResponse] = await connection.execute(getVersionNumber, [projectID]);
+  for (let i = 0; i < selectResponse.length; i += 1) {
+    if (versionName === selectResponse[i].versionName) {
+      await connection.rollback();
+      connection.release();
+      return { status: 400, msg: 'Version name already exists.' };
+    }
+  }
   let versionNumber;
   if (selectResponse.length === 0) {
     versionNumber = 1;
