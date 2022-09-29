@@ -1,4 +1,5 @@
 require('dotenv').config();
+const validator = require('express-validator');
 const Battle = require('../models/battle');
 
 const getBattles = async (req, res) => {
@@ -47,13 +48,15 @@ const getBattles = async (req, res) => {
 };
 
 const ifBattleExists = async (req, res) => {
-  const { battleName } = req.params;
-  if (battleName.length > 30) {
-    return res.status(400).json({
-      msg: 'Battle name should not be larger than 30 characters.',
-    });
+  // battle name validator.
+  const errors = validator.validationResult(req);
+  if (!errors.isEmpty()) {
+    const errorMessage = errors.array()[0].msg;
+    return res.status(400).json({ msg: errorMessage });
   }
+
   // check battle detail.
+  const { battleName } = req.params;
   const checkExists = await Battle.ifBattleExists(battleName);
   if (checkExists === 1) {
     return res.status(400).json({
