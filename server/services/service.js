@@ -30,18 +30,22 @@ function wrapAsync(fn) {
 }
 
 async function runCommand(containerName, cmd) {
+  console.log(containerName);
   return new Promise((resolve, reject) => {
+    let lateTrigger = false;
     const lateTimeout = setTimeout(() => {
+      lateTrigger = true;
       exec(`docker rm -f ${containerName}`, (error, stdout, stderr) => {
-        reject(new Error('Script execut timeout.'));
       });
     }, 10000);
     exec(cmd, (error, stdout, stderr) => {
-      if (stderr) {
+      console.log(lateTrigger);
+      if (lateTrigger) {
+        reject( new Error('Script execute timeout.'));
+      } else if (stderr) {
         clearTimeout(lateTimeout);
         reject(stderr);
-      }
-      if (stdout) {
+      } else if (stdout) {
         clearTimeout(lateTimeout);
         resolve(stdout);
       } else {
@@ -60,13 +64,15 @@ async function compile(userID, fileName, codes) {
   try {
     compilerResult = await runCommand(
       `${userID}_${tmpTime}`,
-      `docker run -v -cpus="0.2" \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes --rm node-tool --name ${userID}_${tmpTime} /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
+      `docker run --cpus="0.2" -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
     );
   } catch (error) {
-    compilerResult = error;
+	  console.log("error: ", error);
+    compilerResult = error.message;
   }
   fs.rmSync(userCodeRoute);
-  return compilerResult;
+  console.log("compiler result: ", compilerResult)
+	return compilerResult;
 }
 
 function preProcessCodes(codes, questionName) {
