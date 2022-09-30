@@ -29,15 +29,23 @@ function wrapAsync(fn) {
   };
 }
 
-async function runCommand(cmd) {
+async function runCommand(containerName, cmd) {
   return new Promise((resolve, reject) => {
+    const lateTimeout = setTimeout(() => {
+      exec(`docker rm -f ${containerName}`, (error, stdout, stderr) => {
+        reject(new Error('Script execut timeout.'));
+      });
+    }, 10000);
     exec(cmd, (error, stdout, stderr) => {
       if (stderr) {
+        clearTimeout(lateTimeout);
         reject(stderr);
       }
       if (stdout) {
+        clearTimeout(lateTimeout);
         resolve(stdout);
       } else {
+        clearTimeout(lateTimeout);
         resolve('');
       }
     });
@@ -50,7 +58,10 @@ async function compile(userID, fileName, codes) {
   fs.writeFileSync(userCodeRoute, codes);
   let compilerResult;
   try {
-    compilerResult = await runCommand(`docker run -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes --rm node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`);
+    compilerResult = await runCommand(
+      `${userID}_${tmpTime}`,
+      `docker run -v -cpus="0.2" \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes --rm node-tool --name ${userID}_${tmpTime} /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
+    );
   } catch (error) {
     compilerResult = error;
   }
