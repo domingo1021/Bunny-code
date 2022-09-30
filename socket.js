@@ -228,7 +228,10 @@ io.on('connection', async (socket) => {
     let userCategory = CLIENT_CATEGORY.visitor;
     const battleResponse = await queryBattler(queryObject.battleID);
     if (battleResponse === null) {
-      console.log('Battle finished alert');
+      console.log('Battle not found');
+      socket.emit('battleNotFound');
+    } else if (battleResponse === {}) {
+      console.log('Battle finished.');
       socket.emit('battleFinished');
     }
     if ([battleResponse.firstUserID, battleResponse.secondUserID].includes(socket.user.id)) {
@@ -287,9 +290,6 @@ io.on('connection', async (socket) => {
   });
 
   socket.on('compile', async (queryObject) => {
-    // TODO: 對照 compile result & answer
-    // TODO: Answer for question 要先放好在 Redis 內 (JSON.stringify) --> write a CRUD question answers array function
-    // TODO: 如果 Answer wrong 直接回罐頭錯誤訊息，不用給後端 stderr message.
     const battleObject = await Cache.hGetAll(`${socket.battleID}`);
     const currentUserObject = JSON.parse(battleObject[`${socket.user.id}`]);
     console.log('Current User Object: ', currentUserObject);
@@ -311,7 +311,7 @@ io.on('connection', async (socket) => {
       queryObject.questionName,
     );
 
-    // User limit count. --> 前端也必須擋使用者瘋狂按按鍵的問題
+    // User limit count.
     let corrections = [];
     const jsonResult = [];
 
@@ -409,6 +409,9 @@ io.on('connection', async (socket) => {
       return;
     }
     const winnerData = await getWinnerData(queryObject.battleID);
+    if (winnerData === null) {
+      socket.emit('battleNotFound');
+    }
     socket.emit('winnerData', winnerData);
   });
 

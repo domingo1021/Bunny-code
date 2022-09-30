@@ -7,16 +7,22 @@ const queryBattler = async (battleID) => {
   const sqlFirst = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name, b.is_finish, 
   q.question_name, q.question_url, q.base_url, a.answer_number as answerNumber, a.test_case as testCase, a.output
   FROM battle as b, user as u, question as q, answer as a
-  WHERE battle_id = ? AND u.user_id = b.first_user_id AND q.question_id = b.question_id AND q.question_id = a.question_id`;
+  WHERE battle_id = ? AND u.user_id = b.first_user_id AND deleted = 0
+  AND q.question_id = b.question_id AND q.question_id = a.question_id`;
   const sqlSecond = `SELECT b.battle_name, b.first_user_id, b.second_user_id, u.user_name
   FROM battle as b, user as u 
-  WHERE battle_id = ? AND u.user_id = b.second_user_id`;
+  WHERE battle_id = ? AND u.user_id = b.second_user_id AND deleted = 0`;
   const [firstUser] = await connection.execute(sqlFirst, [battleID]);
-  if (firstUser[0].isFinish === 1) {
-    // TODO: say the battle had already been finished.
-    connection.release;
+  // Say the battle had already been finished.
+  if (firstUser.length === 0) {
+    connection.release();
     return null;
   }
+  if (firstUser[0].isFinish === 1) {
+    connection.release();
+    return {};
+  }
+  // Battle exists -> get details for frontend.
   const [secondUser] = await connection.execute(sqlSecond, [battleID]);
   const answer = firstUser.map((result) => {
     const answerObject = {};
@@ -25,7 +31,6 @@ const queryBattler = async (battleID) => {
     answerObject[`answer-${result.answerNumber}`] = JSON.stringify(testObject);
     return answerObject;
   });
-  // TODO: Fix: fix if there is no battle;
   const responseObject = {
     battleID,
     battleName: firstUser[0].battle_name,
@@ -125,7 +130,7 @@ const getWinnerData = async (battleID) => {
   `;
   const [winnerObject] = await pool.execute(winnerSQL, [battleID]);
   if (winnerObject.length === 0) {
-    return {};
+    return null;
   }
   winnerObject[0].winnerURL = process.env.AWS_DISTRIBUTION_NAME + winnerObject[0].winnerURL;
   winnerObject[0].questionURL = process.env.AWS_DISTRIBUTION_NAME + winnerObject[0].questionURL;
@@ -135,7 +140,7 @@ const getWinnerData = async (battleID) => {
 
 const deleteBattle = async (battleID) => {
   const deleteSQL = `
-    UPDATE battle SET deleted = 1 WHERE battle_id = ?;
+    UPDATE battle SET deleted = 1, is_finish = 1 WHERE battle_id = ?;
   `;
   await pool.execute(deleteSQL, [battleID]);
 };
