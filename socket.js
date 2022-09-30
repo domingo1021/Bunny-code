@@ -428,35 +428,35 @@ io.on('connection', async (socket) => {
         });
       }
     }
-    console.log(socket.category, socket.battleID);
-    if (socket.category === 'battle' && socket.battleID !== undefined) {
-      // Check cache, if is battler, then battle over.
-      if (Cache.ready) {
-        await Cache.executeIsolated(async (isolatedClient) => {
-          const battleID = socket.battleID.split('-')[1];
-          await isolatedClient.watch(battleID);
-          const battleObject = await isolatedClient.HGETALL(socket.battleID);
-          const userIDs = Object.keys(battleObject);
-          const userValues = Object.values(battleObject);
-          for (let i = 0; i < userValues.length; i += 1) {
-            const { ready } = JSON.parse(userValues[i]);
-            console.log('ready: ', ready);
-            if (ready === 0) {
-              return;
-            }
-          }
-          if (userIDs.includes(`${socket.user.id}`)) {
-            userIDs.splice(userIDs.indexOf(`${socket.user.id}`), 1);
-            await deleteBattle(battleID);
-            await isolatedClient.del(socket.battleID);
-            console.log('battleOver');
-            socket.to(socket.battleID).emit('battleTerminate', {
-              reason: `${socket.user.name} just leave the battle.`,
-            });
-          }
-        });
-      }
-    }
+    // console.log(socket.category, socket.battleID);
+    // if (socket.category === 'battle' && socket.battleID !== undefined) {
+    //   // Check cache, if is battler, then battle over.
+    //   if (Cache.ready) {
+    //     await Cache.executeIsolated(async (isolatedClient) => {
+    //       const battleID = socket.battleID.split('-')[1];
+    //       await isolatedClient.watch(battleID);
+    //       const battleObject = await isolatedClient.HGETALL(socket.battleID);
+    //       const userIDs = Object.keys(battleObject);
+    //       const userValues = Object.values(battleObject);
+    //       for (let i = 0; i < userValues.length; i += 1) {
+    //         const { ready } = JSON.parse(userValues[i]);
+    //         console.log('ready: ', ready);
+    //         if (ready === 0) {
+    //           return;
+    //         }
+    //       }
+    //       if (userIDs.includes(`${socket.user.id}`)) {
+    //         userIDs.splice(userIDs.indexOf(`${socket.user.id}`), 1);
+    //         await deleteBattle(battleID);
+    //         await isolatedClient.del(socket.battleID);
+    //         console.log('battleOver');
+    //         socket.to(socket.battleID).emit('battleTerminate', {
+    //           reason: `${socket.user.name} just leave the battle.`,
+    //         });
+    //       }
+    //     });
+    //   }
+    // }
     // // check if user in battle room, otherwise, update user project status to unediting.
     // console.log(`#${socket.user.id} user disconnection.`);
   });
