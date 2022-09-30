@@ -18,7 +18,7 @@ const queryBattler = async (battleID) => {
     connection.release();
     return null;
   }
-  if (firstUser[0].isFinish === 1) {
+  if (firstUser[0].is_finish === 1) {
     connection.release();
     return {};
   }

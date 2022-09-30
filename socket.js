@@ -229,7 +229,7 @@ io.on('connection', async (socket) => {
       return;
     }
     // battle have already finished, redirect.
-    if (battleResponse === {}) {
+    if (Object.keys(battleResponse).length === 0) {
       console.log('Battle finished.');
       socket.emit('battleFinished');
       return;
