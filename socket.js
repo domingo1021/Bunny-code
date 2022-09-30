@@ -219,25 +219,29 @@ io.on('connection', async (socket) => {
     }
   });
 
-  // for battle
   socket.on('queryBattler', async (queryObject) => {
     socket.category = 'battle';
-    // input: battleID
     console.log(`user in, with queryObject: ${JSON.stringify(queryObject)}`);
-    // user join battle socket room.
-    let userCategory = CLIENT_CATEGORY.visitor;
     const battleResponse = await queryBattler(queryObject.battleID);
+    // battle not found.
     if (battleResponse === null) {
-      console.log('Battle not found');
       socket.emit('battleNotFound');
-    } else if (battleResponse === {}) {
+      return;
+    }
+    // battle have already finished, redirect.
+    if (battleResponse === {}) {
       console.log('Battle finished.');
       socket.emit('battleFinished');
+      return;
     }
+    // check user status.
+    let userCategory = CLIENT_CATEGORY.visitor;
     if ([battleResponse.firstUserID, battleResponse.secondUserID].includes(socket.user.id)) {
       userCategory = CLIENT_CATEGORY.self;
     }
+    // input: battleID
     socket.battleID = `battle-${queryObject.battleID}`;
+    // user join battle socket room.
     socket.join(socket.battleID);
     const battleObject = await Cache.HGETALL(`${socket.battleID}`);
     const { firstUserID, secondUserID, answer } = battleResponse;
@@ -340,7 +344,7 @@ io.on('connection', async (socket) => {
       console.log('error: ', error);
       corrections.push(false);
     }
-    // TODO: build the object that will send to frontend for correction display.
+    // build the object that will send to frontend for correction display.
     // Send user the test case which is wrong.
     console.log('correction: ', corrections);
     const testCase = [];
