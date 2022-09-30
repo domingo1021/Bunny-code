@@ -41,7 +41,7 @@ async function runCommand(containerName, cmd) {
     exec(cmd, (error, stdout, stderr) => {
       console.log(lateTrigger);
       if (lateTrigger) {
-        reject( new Error('Script execute timeout.'));
+        reject(new Error('Script execute timeout.'));
       } else if (stderr) {
         clearTimeout(lateTimeout);
         reject(stderr);
@@ -67,12 +67,10 @@ async function compile(userID, fileName, codes) {
       `docker run --cpus="0.2" -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
     );
   } catch (error) {
-	  console.log("error: ", error);
     compilerResult = error.message;
   }
   fs.rmSync(userCodeRoute);
-  console.log("compiler result: ", compilerResult)
-	return compilerResult;
+  return compilerResult;
 }
 
 function preProcessCodes(codes, questionName) {
