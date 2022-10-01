@@ -56,11 +56,16 @@ function wrapAsync(fn) {
 // }
 
 async function runCommand(containerName, cmd) {
-  setTimeout(async () => {
+  // Set if runtime exists.
+  const threshold = 10000;
+  const timeout = setTimeout(async () => {
     await exec(`docker kill ${containerName}`);
-    throw new Error('Script executes timeout, compile exceeds 10 seconds.');
-  });
+    throw new Error('Script executes timeout, runtime exceeds 10 seconds.');
+  }, threshold);
+
+  // Execute users codes with child process.
   const { stdout, stderr } = await exec(cmd);
+  clearTimeout(timeout);
   if (stderr) {
     throw new Error(stderr);
   }
