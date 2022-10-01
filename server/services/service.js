@@ -142,7 +142,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
       }
       break;
     }
-    case 'Longest common subseauence': {
+    case 'Longest common subsequence': {
       try {
         compilerResults = await runCommand(
           containerName,
