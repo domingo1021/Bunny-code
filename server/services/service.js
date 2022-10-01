@@ -47,7 +47,7 @@ async function runCommand(containerName, cmd) {
   } catch (error) {
     clearTimeout(timeout);
     if (error.stderr === '') {
-      throw new ServiceException(error.code);
+      throw new ServiceException(`Runtime terminated because of error code: [${error.code}]`);
     }
     throw new ServiceException(error.stderr);
   }
