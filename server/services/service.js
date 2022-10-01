@@ -46,7 +46,7 @@ async function runCommand(containerName, cmd) {
     return stdout;
   } catch (error) {
     if (error.stderr === '') {
-      throw new ServiceException(`Runtime terminated because of error code: [${error.code}]`);
+      throw new ServiceException('Script executes timeout, runtime exceeds 10 seconds.');
     }
     clearTimeout(timeout);
     throw new ServiceException(error.stderr);
