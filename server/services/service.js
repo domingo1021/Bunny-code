@@ -63,7 +63,6 @@ async function compile(userID, fileName, codes) {
       `${userID}_${tmpTime}`,
       `docker run \
       --cpus="0.2" \
-      --memory=10m \
       -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes \
       --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
     );
@@ -111,7 +110,6 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
           containerName,
           `docker run \
           --cpus="0.2" \
-          --memory=10m \
           -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} \
           -e TWO_SUM_FILE=./${tmpFileName} \
           --name ${containerName} \
@@ -131,7 +129,6 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
           containerName,
           `docker run \
           --cpus="0.2" \
-          --memory=10m \
           -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} \
           -e HELLO_FILE=./${tmpFileName} \
           --name ${containerName} \
@@ -151,7 +148,6 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
           containerName,
           `docker run \
           --cpus="0.2" \
-          --memory=10m \
           -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} \
           -e LCS_FILE=./${tmpFileName} \
           --name ${containerName} \
