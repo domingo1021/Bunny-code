@@ -61,7 +61,10 @@ async function compile(userID, fileName, codes) {
   try {
     compilerResult = await runCommand(
       `${userID}_${tmpTime}`,
-      `docker run --cpus="0.2" -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
+      `docker run \
+      --cpus="0.2" \
+      -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes \
+      --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
     );
   } catch (error) {
     compilerResult = error.msg;
