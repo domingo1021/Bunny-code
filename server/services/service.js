@@ -30,15 +30,13 @@ function wrapAsync(fn) {
 }
 
 async function runCommand(containerName, cmd) {
-  console.log(containerName);
   return new Promise((resolve, reject) => {
     let lateTrigger = false;
     const lateTimeout = setTimeout(() => {
       lateTrigger = true;
-      exec(`docker rm -f ${containerName}`);
-    }, 10000);
+      exec(`docker kill ${containerName}`);
+    }, 5000);
     exec(cmd, (error, stdout, stderr) => {
-      console.log(lateTrigger);
       if (lateTrigger) {
         reject(new Error('Script execute timeout.'));
       } else if (stderr) {
