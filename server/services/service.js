@@ -31,30 +31,6 @@ function wrapAsync(fn) {
   };
 }
 
-// async function runCommand(containerName, cmd) {
-//   return new Promise((resolve, reject) => {
-//     let lateTrigger = false;
-//     const lateTimeout = setTimeout(() => {
-//       lateTrigger = true;
-//       exec(`docker kill ${containerName}`);
-//     }, 5000);
-//     exec(cmd, (error, stdout, stderr) => {
-//       if (lateTrigger) {
-//         reject(new Error('Script execute timeout.'));
-//       } else if (stderr) {
-//         clearTimeout(lateTimeout);
-//         reject(new Error(stderr));
-//       } else if (stdout) {
-//         clearTimeout(lateTimeout);
-//         resolve(stdout);
-//       } else {
-//         clearTimeout(lateTimeout);
-//         resolve('');
-//       }
-//     });
-//   });
-// }
-
 async function runCommand(containerName, cmd) {
   // Set if runtime exists.
   const threshold = 10000;
@@ -64,26 +40,17 @@ async function runCommand(containerName, cmd) {
   }, threshold);
 
   // Execute users codes with child process.
-	try{
-  const { stdout, stderr, error } = await exec(cmd);
-  clearTimeout(timeout);
-	if(error){
-		console.log("error: ", error)
-		throw new ServiceException("Runtime error");
-	}
-  if (stderr) {
-	  console.log("stderr: ", stderr)
-    throw new ServiceException(stderr);
+  try {
+    const { stdout } = await exec(cmd);
+    clearTimeout(timeout);
+    return stdout;
+  } catch (error) {
+    clearTimeout(timeout);
+    if (error.stderr === '') {
+      throw new ServiceException(error.code);
+    }
+    throw new ServiceException(error.stderr);
   }
-  return stdout;
-} catch(error){
-	clearTimeout(timeout);
-	console.log("catch error: ", Object.keys(error))
-	if(error.stderr === ""){
-		throw new ServiceException("Script executes timeout, runtime exceeds 10 seconds.")
-	}
-	throw new ServiceException(error.stderr)
-}
 }
 
 async function compile(userID, fileName, codes) {
@@ -97,8 +64,7 @@ async function compile(userID, fileName, codes) {
       `docker run --cpus="0.2" -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
     );
   } catch (error) {
-    //console.log("error: ", error)
-	  compilerResult = error.msg;
+    compilerResult = error.msg;
   }
   fs.rmSync(userCodeRoute);
   return compilerResult;
