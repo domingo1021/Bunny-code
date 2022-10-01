@@ -103,15 +103,10 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
   switch (questionName) {
     case 'Two sum': {
       try {
-        compilerResults = await runCommand(containerName, `
-        docker run 
-        --cpus="0.2" 
-        -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} 
-        -e TWO_SUM_FILE=./${tmpFileName}
-        --name ${containerName}
-        --rm 
-        sandbox 
-        /bunny_code/twoSum.js`);
+        compilerResults = await runCommand(
+          containerName,
+          `docker run --cpus="0.2" -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e TWO_SUM_FILE=./${tmpFileName} --name ${containerName} --rm sandbox /bunny_code/twoSum.js`,
+        );
         resultStatus = 'success';
       } catch (error) {
         compilerResults = error;
@@ -121,15 +116,10 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
     }
     case 'Hello world': {
       try {
-        compilerResults = await runCommand(containerName, `
-        docker run 
-        --cpus="0.2" 
-        -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} 
-        -e HELLO_FILE=./${tmpFileName} 
-        --name ${containerName}
-        --rm
-        sandbox 
-        /bunny_code/hello.js`);
+        compilerResults = await runCommand(
+          containerName,
+          `docker run --cpus="0.2" -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e HELLO_FILE=./${tmpFileName} --name ${containerName} --rm sandbox /bunny_code/hello.js`,
+        );
         resultStatus = 'success';
       } catch (error) {
         compilerResults = error;
@@ -139,15 +129,10 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
     }
     case 'Longest common subseauence': {
       try {
-        compilerResults = await runCommand(containerName, `
-        docker run 
-        --cpus="0.2" 
-        -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} 
-        -e LCS_FILE=./${tmpFileName} 
-        --name ${containerName}
-        --rm 
-        sandbox 
-        /bunny_code/subsequence.js`);
+        compilerResults = await runCommand(
+          containerName,
+          `docker run --cpus="0.2" -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e LCS_FILE=./${tmpFileName} --name ${containerName} --rm sandbox /bunny_code/subsequence.js`,
+        );
         resultStatus = 'success';
       } catch (error) {
         compilerResults = error;
