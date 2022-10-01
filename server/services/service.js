@@ -1,5 +1,7 @@
 const multer = require('multer');
-const { exec } = require('child_process');
+const util = require('util');
+// const { exec } = require('child_process');
+const exec = util.promisify(require('child_process').exec);
 const fs = require('fs');
 
 class FileUploadException {
@@ -29,28 +31,40 @@ function wrapAsync(fn) {
   };
 }
 
+// async function runCommand(containerName, cmd) {
+//   return new Promise((resolve, reject) => {
+//     let lateTrigger = false;
+//     const lateTimeout = setTimeout(() => {
+//       lateTrigger = true;
+//       exec(`docker kill ${containerName}`);
+//     }, 5000);
+//     exec(cmd, (error, stdout, stderr) => {
+//       if (lateTrigger) {
+//         reject(new Error('Script execute timeout.'));
+//       } else if (stderr) {
+//         clearTimeout(lateTimeout);
+//         reject(new Error(stderr));
+//       } else if (stdout) {
+//         clearTimeout(lateTimeout);
+//         resolve(stdout);
+//       } else {
+//         clearTimeout(lateTimeout);
+//         resolve('');
+//       }
+//     });
+//   });
+// }
+
 async function runCommand(containerName, cmd) {
-  return new Promise((resolve, reject) => {
-    let lateTrigger = false;
-    const lateTimeout = setTimeout(() => {
-      lateTrigger = true;
-      exec(`docker kill ${containerName}`);
-    }, 5000);
-    exec(cmd, (error, stdout, stderr) => {
-      if (lateTrigger) {
-        reject(new Error('Script execute timeout.'));
-      } else if (stderr) {
-        clearTimeout(lateTimeout);
-        reject(new Error(stderr));
-      } else if (stdout) {
-        clearTimeout(lateTimeout);
-        resolve(stdout);
-      } else {
-        clearTimeout(lateTimeout);
-        resolve('');
-      }
-    });
+  setTimeout(async () => {
+    await exec(`docker kill ${containerName}`);
+    throw new Error('Script executes timeout, compile exceeds 10 seconds.');
   });
+  const { stdout, stderr } = await exec(cmd);
+  if (stderr) {
+    throw new Error(stderr);
+  }
+  return stdout;
 }
 
 async function compile(userID, fileName, codes) {
@@ -102,7 +116,14 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
   switch (questionName) {
     case 'Two sum': {
       try {
-        compilerResults = await runCommand(`docker run --cpus="0.2" -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e TWO_SUM_FILE=./${tmpFileName} --rm sandbox /bunny_code/twoSum.js`);
+        compilerResults = await runCommand(`
+        docker run 
+        --cpus="0.2" 
+        -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} 
+        -e TWO_SUM_FILE=./${tmpFileName} 
+        --rm 
+        sandbox 
+        /bunny_code/twoSum.js`);
         resultStatus = 'success';
       } catch (error) {
         compilerResults = error;
