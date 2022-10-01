@@ -109,7 +109,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
         );
         resultStatus = 'success';
       } catch (error) {
-        compilerResults = error;
+        compilerResults = error.msg;
         resultStatus = 'failed';
       }
       break;
@@ -122,7 +122,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
         );
         resultStatus = 'success';
       } catch (error) {
-        compilerResults = error;
+        compilerResults = error.msg;
         resultStatus = 'failed';
       }
       break;
@@ -135,7 +135,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
         );
         resultStatus = 'success';
       } catch (error) {
-        compilerResults = error;
+        compilerResults = error.msg;
         resultStatus = 'failed';
       }
       break;
