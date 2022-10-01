@@ -4,7 +4,7 @@ const util = require('util');
 const exec = util.promisify(require('child_process').exec);
 const fs = require('fs');
 
-class FileUploadException {
+class ServiceException {
   constructor(msg) {
     this.msg = msg;
   }
@@ -16,9 +16,9 @@ const fileUploader = multer({
     console.log('mimetype: ', file.mimetype);
     const fileSize = parseInt(req.headers['content-length']);
     if (file.mimetype !== 'application/javascript') {
-      cb(new FileUploadException('Only javascript file is accepted'));
+      cb(new ServiceException('Only javascript file is accepted'));
     } else if (fileSize >= 1024 * 1024 * 3) {
-      cb(new FileUploadException('File too large.'));
+      cb(new ServiceException('File too large.'));
     } else {
       cb(null, true);
     }
@@ -60,14 +60,14 @@ async function runCommand(containerName, cmd) {
   const threshold = 10000;
   const timeout = setTimeout(async () => {
     await exec(`docker kill ${containerName}`);
-    throw new Error('Script executes timeout, runtime exceeds 10 seconds.');
+    throw new ServiceException('Script executes timeout, runtime exceeds 10 seconds.');
   }, threshold);
 
   // Execute users codes with child process.
   const { stdout, stderr } = await exec(cmd);
   clearTimeout(timeout);
   if (stderr) {
-    throw new Error(stderr);
+    throw new ServiceException(stderr);
   }
   return stdout;
 }
@@ -83,7 +83,7 @@ async function compile(userID, fileName, codes) {
       `docker run --cpus="0.2" -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
     );
   } catch (error) {
-    compilerResult = error.message;
+    compilerResult = error.msg;
   }
   fs.rmSync(userCodeRoute);
   return compilerResult;
@@ -164,5 +164,5 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
 }
 
 module.exports = {
-  wrapAsync, fileUploader, FileUploadException, runCommand, compile, leetCodeCompile,
+  wrapAsync, fileUploader, ServiceException, runCommand, compile, leetCodeCompile,
 };
