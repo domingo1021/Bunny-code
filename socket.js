@@ -419,6 +419,37 @@ io.on('connection', async (socket) => {
     socket.emit('winnerData', winnerData);
   });
 
+  socket.on('leaveBattle', async () => {
+    if (!Cache.ready) {
+      return;
+    }
+    await Cache.executeIsolated(async (isolatedClient) => {
+      const battleID = socket.battleID.split('-')[1];
+      await isolatedClient.watch(battleID);
+      const battleObject = await isolatedClient.HGETALL(socket.battleID);
+      const userIDs = Object.keys(battleObject);
+      const userValues = Object.values(battleObject);
+      for (let i = 0; i < userValues.length; i += 1) {
+        const { ready } = JSON.parse(userValues[i]);
+        console.log('ready: ', ready);
+        if (ready === 0) {
+          delete socket.battle;
+          return;
+        }
+      }
+      if (userIDs.includes(`${socket.user.id}`)) {
+        userIDs.splice(userIDs.indexOf(`${socket.user.id}`), 1);
+        await deleteBattle(battleID);
+        await isolatedClient.del(socket.battleID);
+        console.log('battleOver');
+        socket.to(socket.battleID).emit('battleTerminate', {
+          reason: `${socket.user.name} just leave the battle.`,
+        });
+      }
+    });
+    delete socket.battle;
+  });
+
   socket.on('disconnect', async () => {
     if (socket.category === 'workspace' && socket.versionID !== undefined) {
       // TODO: cahce 撈 versionID 的 socketID 去比對離開的人的 socket.id (如果相同則 unEditing)
