@@ -397,7 +397,7 @@ io.on('connection', async (socket) => {
         reason: 'For just compiled with the right answer',
       });
     } else if (!isWinner && currentUserObject.chance === 0) {
-      await battleFinish(queryObject.battleID, socket.user.id);
+      await deleteBattle(queryObject.battleID);
       await Cache.del(`${socket.battleID}`);
       socket.to(socket.battleID).emit('battleTerminate', {
         reason: `${socket.user.name} just ran out of compile chance`,
