@@ -1,11 +1,6 @@
 require('dotenv').config();
+const validator = require('express-validator');
 const Battle = require('../models/battle');
-
-const createBattle = async (req, res) => {
-  console.log('creating..');
-  await Battle.createBattle();
-  return res.status(200).send('battle created');
-};
 
 const getBattles = async (req, res) => {
   const { status, type } = req.query;
@@ -17,7 +12,7 @@ const getBattles = async (req, res) => {
   if (status === 'finished') {
     isFinish = 1;
   }
-  if (!+paging) {
+  if (!+paging || +paging < 0) {
     paging = 0;
   }
   let firstBattler;
@@ -53,13 +48,15 @@ const getBattles = async (req, res) => {
 };
 
 const ifBattleExists = async (req, res) => {
-  const { battleName } = req.params;
-  if (battleName.length > 30) {
-    return res.status(400).json({
-      msg: 'Battle name should not be larger than 30 characters.',
-    });
+  // battle name validator.
+  const errors = validator.validationResult(req);
+  if (!errors.isEmpty()) {
+    const errorMessage = errors.array()[0].msg;
+    return res.status(400).json({ msg: errorMessage });
   }
-  // TODO: check battle detail.
+
+  // check battle detail.
+  const { battleName } = req.params;
   const checkExists = await Battle.ifBattleExists(battleName);
   if (checkExists === 1) {
     return res.status(400).json({
@@ -72,5 +69,5 @@ const ifBattleExists = async (req, res) => {
 };
 
 module.exports = {
-  createBattle, getBattles, ifBattleExists,
+  getBattles, ifBattleExists,
 };

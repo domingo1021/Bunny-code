@@ -1,9 +1,9 @@
 const pool = require('../utils/rmdb');
 
 const versionEditStatus = async (userID, projectID, versionID) => {
+  const connection = await pool.getConnection();
   console.log(`user ${userID} is reading project-${projectID}, version-${versionID}`);
   try {
-    const connection = await pool.getConnection();
     const projectSQL = 'SELECT user_id as userID FROM project WHERE project_id = ?';
     const [proejctRepsonse] = await connection.execute(projectSQL, [projectID]);
     if (userID !== proejctRepsonse[0].userID) {
@@ -31,6 +31,7 @@ const versionEditStatus = async (userID, projectID, versionID) => {
       authorization: true,
     };
   } catch (error) {
+    connection.release();
     return {
       readOnly: true,
       authorization: false,

@@ -79,7 +79,7 @@ const userSignUp = async (req, res) => {
   // JWT token
   const payload = {
     id: userID,
-    name: user.name,
+    name: user.user_name,
     email: user.email,
     provider: 'native',
   };
@@ -130,7 +130,11 @@ const getUserProjects = async (req, res) => {
 };
 
 const createUserProject = async (req, res) => {
-  console.log('Createing project');
+  const errors = validator.validationResult(req);
+  if (!errors.isEmpty()) {
+    const errorMessage = errors.array()[0].msg;
+    return res.status(400).json({ msg: errorMessage });
+  }
   const { userID } = req.params;
   const {
     projectName, projectDescription, isPublic, versionName, fileName,

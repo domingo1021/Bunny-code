@@ -1,8 +1,10 @@
 const multer = require('multer');
-const { exec } = require('child_process');
+const util = require('util');
+// const { exec } = require('child_process');
+const exec = util.promisify(require('child_process').exec);
 const fs = require('fs');
 
-class FileUploadException {
+class ServiceException {
   constructor(msg) {
     this.msg = msg;
   }
@@ -14,9 +16,9 @@ const fileUploader = multer({
     console.log('mimetype: ', file.mimetype);
     const fileSize = parseInt(req.headers['content-length']);
     if (file.mimetype !== 'application/javascript') {
-      cb(new FileUploadException('Only javascript file is accepted'));
+      cb(new ServiceException('Only javascript file is accepted'));
     } else if (fileSize >= 1024 * 1024 * 3) {
-      cb(new FileUploadException('File too large.'));
+      cb(new ServiceException('File too large.'));
     } else {
       cb(null, true);
     }
@@ -29,19 +31,26 @@ function wrapAsync(fn) {
   };
 }
 
-async function runCommand(cmd) {
-  return new Promise((resolve, reject) => {
-    exec(cmd, (error, stdout, stderr) => {
-      if (stderr) {
-        console.log(`stderr: ${stderr}`);
-        reject(stderr);
-      }
-      if (stdout) {
-        // console.log(`stdout: ${stdout}`);
-        resolve(stdout);
-      }
-    });
-  });
+async function runCommand(containerName, cmd) {
+  // Set if runtime exists.
+  const threshold = 10000;
+  const timeout = setTimeout(async () => {
+    await exec(`docker kill ${containerName}`);
+    throw new ServiceException('Script executes timeout, runtime exceeds 10 seconds.');
+  }, threshold);
+
+  // Execute users codes with child process.
+  try {
+    const { stdout } = await exec(cmd);
+    clearTimeout(timeout);
+    return stdout;
+  } catch (error) {
+    if (error.stderr === '') {
+      throw new ServiceException(`Runtime error with error code [${error.code}]`);
+    }
+    clearTimeout(timeout);
+    throw new ServiceException(error.stderr);
+  }
 }
 
 async function compile(userID, fileName, codes) {
@@ -50,48 +59,104 @@ async function compile(userID, fileName, codes) {
   fs.writeFileSync(userCodeRoute, codes);
   let compilerResult;
   try {
-    compilerResult = await runCommand(`docker run -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes --rm node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`);
+    compilerResult = await runCommand(
+      `${userID}_${tmpTime}`,
+      `docker run \
+      --cpus="0.2" \
+      -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes \
+      --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
+    );
   } catch (error) {
-    compilerResult = error;
+    compilerResult = error.msg;
   }
   fs.rmSync(userCodeRoute);
   return compilerResult;
 }
 
+function preProcessCodes(codes, questionName) {
+  let newCodes = codes;
+  switch (questionName) {
+    case 'Two sum': {
+      newCodes += '\n module.exports = { twoSum };';
+      break;
+    }
+    case 'Hello world': {
+      newCodes += '\n module.exports = { helloWorld };';
+      break;
+    }
+    case 'Longest common subsequence': {
+      newCodes += '\n module.exports = { getLCS };';
+      break;
+    }
+    default:
+      break;
+  }
+  return newCodes;
+}
+
 async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
+  const processedCodes = preProcessCodes(codes, questionName);
   const tmpTime = Date.now();
+  const containerName = `${battlerNumber}_${userID}_${tmpTime}`;
   const tmpFileName = `battle_tmp_codes/${battlerNumber}_${userID}_${tmpTime}.js`;
   const battleCodeRoute = `./docker_tool/${tmpFileName}`;
-  fs.writeFileSync(battleCodeRoute, codes);
+  fs.writeFileSync(battleCodeRoute, processedCodes);
   let compilerResults;
   let resultStatus;
   switch (questionName) {
     case 'Two sum': {
       try {
-        compilerResults = await runCommand(`docker run -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e TWO_SUM_FILE=./${tmpFileName} --rm sandbox /bunny_code/twoSum.js`);
+        compilerResults = await runCommand(
+          containerName,
+          `docker run \
+          --cpus="0.2" \
+          -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} \
+          -e TWO_SUM_FILE=./${tmpFileName} \
+          --name ${containerName} \
+          --rm sandbox \
+          /bunny_code/twoSum.js`,
+        );
         resultStatus = 'success';
       } catch (error) {
-        compilerResults = error;
+        compilerResults = error.msg;
         resultStatus = 'failed';
       }
       break;
     }
     case 'Hello world': {
       try {
-        compilerResults = await runCommand(`docker run -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e HELLO_FILE=./${tmpFileName} --rm sandbox /bunny_code/hello.js`);
+        compilerResults = await runCommand(
+          containerName,
+          `docker run \
+          --cpus="0.2" \
+          -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} \
+          -e HELLO_FILE=./${tmpFileName} \
+          --name ${containerName} \
+          --rm sandbox \
+          /bunny_code/hello.js`,
+        );
         resultStatus = 'success';
       } catch (error) {
-        compilerResults = error;
+        compilerResults = error.msg;
         resultStatus = 'failed';
       }
       break;
     }
-    case 'Longest common subseauence': {
+    case 'Longest common subsequence': {
       try {
-        compilerResults = await runCommand(`docker run -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} -e LCS_FILE=./${tmpFileName} --rm sandbox /bunny_code/subsequence.js`);
+        compilerResults = await runCommand(
+          containerName,
+          `docker run \
+          --cpus="0.2" \
+          -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} \
+          -e LCS_FILE=./${tmpFileName} \
+          --name ${containerName} \
+          --rm sandbox \
+          /bunny_code/subsequence.js`,
+        );
         resultStatus = 'success';
       } catch (error) {
-        compilerResults = error;
+        compilerResults = error.msg;
         resultStatus = 'failed';
       }
       break;
@@ -104,5 +169,5 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
 }
 
 module.exports = {
-  wrapAsync, fileUploader, FileUploadException, runCommand, compile, leetCodeCompile,
+  wrapAsync, fileUploader, ServiceException, runCommand, compile, leetCodeCompile,
 };

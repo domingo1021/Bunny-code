@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const Cache = require('./utils/cache');
-const { FileUploadException } = require('./server/services/service');
+const { ServiceException } = require('./server/services/service');
 
 const { SERVER_PORT, API_VERSION } = process.env;
 
@@ -29,7 +29,7 @@ app.use((req, res, next) => {
 
 // Error handling
 app.use((err, req, res, next) => {
-  if (err instanceof FileUploadException) {
+  if (err instanceof ServiceException) {
     return res.send({ msg: err.msg });
   }
   console.log(err);

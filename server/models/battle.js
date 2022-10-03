@@ -1,10 +1,5 @@
 const pool = require('../../utils/rmdb');
 
-const createBattle = async () => {
-  console.log('DB creating battle');
-  return '';
-};
-
 const getBattles = async (keyword, status, paging) => {
   const userOneSQL = `
   SELECT b.battle_id as battleID, b.battle_name as battleName, b.watch_count as watchCount,
@@ -22,7 +17,7 @@ const getBattles = async (keyword, status, paging) => {
   b.second_user_id as secondUserID, b.winner_id as winnerID, b.winner_url as winnerURL, b.is_finish as isFinish, 
   u.user_name as secondUserName, u.level as secondUserLevel, u.picture as secondUserPicture
   FROM battle as b, user as u, question as q
-  WHERE b.is_finish = ? AND deleted = 0 AND u.user_id = b.first_user_id 
+  WHERE b.is_finish = ? AND deleted = 0 AND u.user_id = b.second_user_id 
   AND b.question_id = q.question_id AND (b.battle_name LIKE ?)
   ORDER BY watch_count DESC
   LIMIT ? OFFSET ?;
@@ -53,7 +48,7 @@ const getBattlesByQuestion = async (keyword, status, paging) => {
   b.second_user_id as secondUserID, b.winner_id as winnerID, b.winner_url as winnerURL, b.is_finish as isFinish, 
   u.user_name as secondUserName, u.level as secondUserLevel, u.picture as secondUserPicture
   FROM battle as b, user as u, question as q
-  WHERE b.is_finish = ? AND deleted = 0 AND u.user_id = b.first_user_id 
+  WHERE b.is_finish = ? AND deleted = 0 AND u.user_id = b.second_user_id 
   AND b.question_id = q.question_id AND (q.question_name LIKE ?)
   ORDER BY watch_count DESC
   LIMIT ? OFFSET ?;
@@ -89,7 +84,7 @@ const getBattlesByUser = async (keyword, status, paging) => {
   b.second_user_id as secondUserID, b.winner_id as winnerID, b.winner_url as winnerURL, b.is_finish as isFinish, 
   u.user_name as secondUserName, u.level as secondUserLevel, u.picture as secondUserPicture
   FROM battle as b, user as u, question as q
-  WHERE b.is_finish = ? AND deleted = 0 AND u.user_id = b.first_user_id 
+  WHERE b.is_finish = ? AND deleted = 0 AND u.user_id = b.second_user_id 
   AND b.question_id = q.question_id AND (first_user_id = ? OR b.second_user_id = ?)
   ORDER BY watch_count DESC
   LIMIT ? OFFSET ?;
@@ -97,6 +92,7 @@ const getBattlesByUser = async (keyword, status, paging) => {
   const limitCount = paging * 6;
   const [targetUser] = await connection.execute(searchUserSQL, [likeString]);
   if (targetUser.length === 0) {
+    connection.release();
     return [];
   }
   const [battleOne] = await connection.query(userOneSQL, [status, targetUser[0].userID, targetUser[0].userID, 6, limitCount]);
@@ -121,7 +117,6 @@ const ifBattleExists = async (battleName) => {
 };
 
 module.exports = {
-  createBattle,
   getBattles,
   writeBattleFile,
   ifBattleExists,

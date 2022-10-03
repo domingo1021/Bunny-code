@@ -1,3 +1,4 @@
+/* eslint-disable prefer-regex-literals */
 // email varify with RegExp
 const checkEmail = (email) => {
   const regex = new RegExp(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -26,6 +27,15 @@ const checkApplicationJSON = (req, res, next) => {
   next();
 };
 
+const validateNormalName = (projectName) => {
+  const regex = new RegExp(/^[a-zA-Z0-9_\-.]{1,20}$/);
+  // Length: 20
+  if (!regex.test(projectName)) {
+    return false;
+  }
+  return true;
+};
+
 module.exports = {
-  checkEmail, checkPassword, checkApplicationJSON,
+  checkEmail, checkPassword, validateNormalName, checkApplicationJSON,
 };

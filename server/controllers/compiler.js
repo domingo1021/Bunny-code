@@ -42,6 +42,7 @@ const writeFile = async (req, res) => {
     console.log(error);
     return res.status(500).send('error occur');
   }
+  connection.release();
   return res.status(201).json({ data: `${process.env.AWS_DISTRIBUTION_NAME}/${s3Results[0].key}` });
   // return res.send('success');
 };

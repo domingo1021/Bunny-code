@@ -56,7 +56,7 @@ const searchProjects = async (keywords, paging) => {
   FROM project as p
   LEFT JOIN user as u
   ON p.user_id = u.user_id
-  WHERE p.is_public = 1 AND (p.project_name LIKE ? OR p.project_description LIKE ? OR u.user_name LIKE ?)
+  WHERE p.deleted = 0 AND p.is_public = 1 AND (p.project_name LIKE ? OR p.project_description LIKE ? OR u.user_name LIKE ?)
   ORDER BY create_at DESC
   LIMIT ? OFFSET ?
   `;
@@ -65,7 +65,7 @@ const searchProjects = async (keywords, paging) => {
   FROM project as p
   LEFT JOIN user as u
   ON p.user_id = u.user_id
-  WHERE is_public = 1 AND (p.project_name LIKE ? OR p.project_description LIKE ? OR u.user_name LIKE ?);`;
+  WHERE p.deleted = 0 AND is_public = 1 AND (p.project_name LIKE ? OR p.project_description LIKE ? OR u.user_name LIKE ?);`;
   const connection = await pool.getConnection();
   const likeString = `%${keywords}%`;
   const limitCount = paging * 6;
@@ -83,10 +83,10 @@ const getAllProjects = async (paging) => {
   FROM project as p
   LEFT JOIN user as u
   ON p.user_id = u.user_id 
-  WHERE is_public = 1
+  WHERE p.deleted = 0 AND p.is_public = 1
   ORDER BY create_at DESC
   LIMIT ? OFFSET ?`;
-  const countSQL = 'SELECT count(project_id) as count FROM project WHERE is_public = 1;';
+  const countSQL = 'SELECT count(project_id) as count FROM project WHERE deleted = 0 AND is_public = 1;';
   const limitCount = paging * 6;
   const [allProject] = await connection.query(sql, [6, limitCount]);
   const [projectCounts] = await connection.execute(countSQL);
@@ -100,11 +100,10 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
   const connection = await pool.getConnection();
   await connection.beginTransaction();
   const getVersionNumber = `
-  SELECT  v.version_id as versionID, v.version_number as versionNumber
+  SELECT  v.version_id as versionID, v.version_name as versionName, v.version_number as versionNumber
   FROM version as v 
   WHERE project_id = ?
-  ORDER BY v.version_id DESC
-  LIMIT 1;`;
+  ORDER BY v.version_id DESC`;
   const createVersionSQL = 'INSERT INTO version (version_name, version_number, project_id) VALUES (?, ?, ?);';
   const latestFile = `
   SELECT file_name as fileName, file_url as fileUrl, log 
@@ -115,6 +114,13 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
   const defaultFile = `
   INSERT INTO file (file_name, file_url, log, version_id) VALUES (?, ?, ?, ?)`;
   const [selectResponse] = await connection.execute(getVersionNumber, [projectID]);
+  for (let i = 0; i < selectResponse.length; i += 1) {
+    if (versionName === selectResponse[i].versionName) {
+      await connection.rollback();
+      connection.release();
+      return { status: 400, msg: 'Version name already exists.' };
+    }
+  }
   let versionNumber;
   if (selectResponse.length === 0) {
     versionNumber = 1;
@@ -202,7 +208,7 @@ const getTopThreeProjects = async () => {
   FROM project as p
   LEFT JOIN user as u
   ON p.user_id = u.user_id 
-  WHERE is_public = 1
+  WHERE p.deleted = 0 AND p.is_public = 1
   ORDER BY watch_count DESC
   LIMIT 3`;
   const [topThree] = await pool.execute(sql);
