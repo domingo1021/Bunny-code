@@ -2,7 +2,8 @@ const express = require('express');
 const { body } = require('express-validator');
 const { getProjects, createProjectVersion, updateProject } = require('../controllers/project');
 const { authMiddleware } = require('../services/auth');
-const { validateNormalName } = require('../services/validation');
+const { validateFilter, validateNormalName } = require('../services/validation');
+const { wrapAsync } = require('../services/service');
 
 const router = express.Router();
 
@@ -25,7 +26,8 @@ router.post(
       } return true;
     }),
   ],
-  createProjectVersion,
+  validateFilter,
+  wrapAsync(createProjectVersion),
 );
 
 module.exports = router;

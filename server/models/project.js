@@ -1,5 +1,69 @@
 require('dotenv').config();
 const pool = require('../../utils/rmdb');
+const { SQLException } = require('../services/exceptions/sql_exception');
+
+async function getVersionInfo(connection, projectID) {
+  const getVersionSQL = `
+  SELECT  v.version_id as versionID, v.version_name as versionName, v.version_number as versionNumber
+  FROM version as v 
+  WHERE project_id = ?
+  ORDER BY v.version_id DESC`;
+  const [versionInfo] = await connection.execute(getVersionSQL, [projectID]);
+  return versionInfo;
+}
+
+function checkVersionExists(versionInfo, versionName) {
+  for (let i = 0; i < versionInfo.length; i += 1) {
+    if (versionName === versionInfo[i].versionName) {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function appendProjectVersion(connection, versionInfo) {
+  const createVersionSQL = 'INSERT INTO version (version_name, version_number, project_id) VALUES (?, ?, ?);';
+  try {
+    const [insertResult] = await connection.execute(createVersionSQL, [
+      versionInfo.versionName,
+      versionInfo.versionNumber,
+      versionInfo.projectID,
+    ]);
+    return insertResult.insertId;
+  } catch (error) {
+    console.log(`Append project version error: ${error}`);
+    return 0;
+  }
+}
+
+async function getLatestFile(connection, versionID) {
+  const latestFile = `
+  SELECT file_name as fileName, file_url as fileUrl, log 
+  FROM file
+  WHERE version_id = ? AND deleted = 0
+  ORDER BY file_id DESC
+  `;
+  const [fileResponse] = await connection.execute(latestFile, [versionID]);
+  return fileResponse;
+}
+
+async function appendVersionFile(connection, fileInfo) {
+  const appendFileSQL = `
+  INSERT INTO file (file_name, file_url, log, version_id) VALUES (?, ?, ?, ?)`;
+  try {
+    console.log(fileInfo);
+    const [insertResult] = await connection.execute(appendFileSQL, [
+      fileInfo.fileName,
+      fileInfo.fileURL,
+      fileInfo.log,
+      fileInfo.versionID,
+    ]);
+    return insertResult.insertId;
+  } catch (error) {
+    console.log(`Append version file error: ${error}`);
+    return 0;
+  }
+}
 
 // TODO: refactor
 const projectDetials = async (projectName) => {
@@ -96,64 +160,82 @@ const getAllProjects = async (paging) => {
   return { projects: allProject, page: paging + 1, allPage };
 };
 
-// TODO: refactor
 const createProjectVersion = async (versionName, fileName, projectID) => {
-  // create new project version according latest version.
+  // check whether version name exists.
+  const currentFunctionName = 'createProjectVersion';
   const connection = await pool.getConnection();
   await connection.beginTransaction();
-  const getVersionNumber = `
-  SELECT  v.version_id as versionID, v.version_name as versionName, v.version_number as versionNumber
-  FROM version as v 
-  WHERE project_id = ?
-  ORDER BY v.version_id DESC`;
-  const createVersionSQL = 'INSERT INTO version (version_name, version_number, project_id) VALUES (?, ?, ?);';
-  const latestFile = `
-  SELECT file_name as fileName, file_url as fileUrl, log 
-  FROM file
-  WHERE version_id = ? AND deleted = 0
-  ORDER BY file_id DESC
-  `;
-  const defaultFile = `
-  INSERT INTO file (file_name, file_url, log, version_id) VALUES (?, ?, ?, ?)`;
-  const [selectResponse] = await connection.execute(getVersionNumber, [projectID]);
-  for (let i = 0; i < selectResponse.length; i += 1) {
-    if (versionName === selectResponse[i].versionName) {
-      await connection.rollback();
-      connection.release();
-      return { status: 400, msg: 'Version name already exists.' };
-    }
-  }
-  let versionNumber;
-  if (selectResponse.length === 0) {
-    versionNumber = 1;
-  } else {
-    versionNumber = selectResponse[0].versionNumber + 1;
-  }
-  let versionID;
-  try {
-    const [createVersion] = await connection.execute(createVersionSQL, [versionName, versionNumber, projectID]);
-    versionID = createVersion.insertId;
-  } catch (error) {
-    console.log('create version error: ', error);
+
+  // get existing version data.
+  const versionInfo = await getVersionInfo(connection, projectID);
+
+  // check if version name (unique) have existed.
+  const hasExisted = checkVersionExists(versionInfo, versionName);
+  if (hasExisted) {
     await connection.rollback();
     connection.release();
-    return {};
+    throw new SQLException('Version already exists.', 'Duplicated version ID', 'version', 'select', currentFunctionName);
   }
-  console.log(selectResponse[0].versionID);
-  let fileID;
-  const [fileResponse] = await connection.execute(latestFile, [selectResponse[0].versionID]);
-  if (fileResponse.length !== 0) {
-    try {
-      console.log('file response [0]', fileResponse[0]);
-      const [createFile] = await connection.execute(defaultFile, [fileName, fileResponse[0].fileUrl, fileResponse[0].log, versionID]);
-      fileID = createFile.insertId;
-    } catch (error) {
-      console.log('cloning file error: ', error);
-      await connection.rollback();
-      connection.release();
-      return {};
-    }
+
+  // prepare new version number.
+  let versionNumber = 1;
+  if (versionInfo.length !== 0) {
+    versionNumber = versionInfo[0].versionNumber + 1;
   }
+
+  // Insert new version.
+  const versionID = await appendProjectVersion(connection, {
+    versionName,
+    versionNumber,
+    projectID,
+  });
+
+  // Check if append new version success.
+  if (versionID === 0) {
+    await connection.rollback();
+    connection.release();
+    throw new SQLException('Version already exists.', 'Duplicated version ID', 'version', 'insert', currentFunctionName);
+  }
+  console.log(`New version ID created: ${versionID}`);
+
+  // Select latest file for the previous version.
+  const fileInfo = await getLatestFile(connection, versionInfo[0].versionID);
+
+  // Check if latest exists success.
+  if (fileInfo.length === 0) {
+    await connection.rollback();
+    connection.release();
+    throw new SQLException(
+      'Cannot find base content for this project',
+      `Missing project based file for project ${projectID}`,
+      'file',
+      'select',
+      currentFunctionName,
+    );
+  }
+
+  // Append a file for new Version.
+  const fileID = await appendVersionFile(connection, {
+    fileName,
+    fileURL: fileInfo[0].fileUrl,
+    log: fileInfo[0].log,
+    versionID,
+  });
+
+  // Check if append new file success.
+  if (fileID === 0) {
+    await connection.rollback();
+    connection.release();
+    throw new SQLException(
+      'Create file failed',
+      `Unexpected result to create file for projectID=${projectID} & versionID=${versionID}`,
+      'file',
+      'insert',
+      currentFunctionName,
+    );
+  }
+  console.log(`New file ID created: ${fileID}`);
+
   await connection.commit();
   connection.release();
   const returnObject = {
@@ -164,8 +246,8 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
     files: [{
       fileID,
       fileName,
-      fileURL: process.env.AWS_DISTRIBUTION_NAME + fileResponse[0].fileUrl,
-      log: fileResponse[0].log,
+      fileURL: process.env.AWS_DISTRIBUTION_NAME + fileInfo[0].fileUrl,
+      log: fileInfo[0].log,
       versionID,
     }],
     records: [],
