@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const Cache = require('./utils/cache');
 const { ServiceException } = require('./server/services/service');
+const { APIException } = require('./server/services/exceptions/api_exception');
+const { SQLException } = require('./server/services/exceptions/sql_exception');
 
 const { SERVER_PORT, API_VERSION } = process.env;
 
@@ -28,12 +30,20 @@ app.use((req, res, next) => {
 });
 
 // Error handling
+// TODO: handle more exception.
 app.use((err, req, res, next) => {
+  console.log(err.fullLog);
   if (err instanceof ServiceException) {
-    return res.send({ msg: err.msg });
+    return res.send({ msg: err.message });
+  }
+  if (err instanceof SQLException) {
+    return res.status(400).json({ msg: err.message });
+  }
+  if (err instanceof APIException) {
+    return res.status(err.status).json({ msg: err.message });
   }
   console.log(err);
-  res.status(500).send('Internal Server Error');
+  return res.status(500).send('Internal Server Error');
 });
 
 const httpServer = app.listen(SERVER_PORT, () => {
