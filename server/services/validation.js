@@ -1,4 +1,13 @@
 /* eslint-disable prefer-regex-literals */
+const { validationResult } = require('express-validator');
+
+function validateFilter(req, res, next) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ msg: errors.array() });
+
+  return next();
+}
+
 // email varify with RegExp
 const checkEmail = (email) => {
   const regex = new RegExp(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -24,7 +33,7 @@ const checkApplicationJSON = (req, res, next) => {
     // Send error here
     return res.status(403).json({ msg: 'Only accept application/json' });
   }
-  next();
+  return next();
 };
 
 const validateNormalName = (projectName) => {
@@ -37,5 +46,5 @@ const validateNormalName = (projectName) => {
 };
 
 module.exports = {
-  checkEmail, checkPassword, validateNormalName, checkApplicationJSON,
+  validateFilter, checkEmail, checkPassword, validateNormalName, checkApplicationJSON,
 };
