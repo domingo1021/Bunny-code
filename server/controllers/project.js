@@ -92,12 +92,6 @@ const getProjects = async (req, res) => {
   });
 };
 
-const getProejctVersions = async (req, res) => {
-  await Project.getProejctVersions();
-  console.log('getting...');
-  return res.status(200).json({ data: 'get user project' });
-};
-
 const createProjectVersion = async (req, res) => {
   const { projectID } = req.params;
   const { versionName, fileName } = req.body;
@@ -150,7 +144,6 @@ const updateProject = async (req, res) => {
 
 module.exports = {
   getProjects,
-  getProejctVersions,
   createProjectVersion,
   updateProject,
 };

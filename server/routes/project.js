@@ -1,23 +1,17 @@
 const express = require('express');
 const { body } = require('express-validator');
-const {
-  getProjects, getProejctVersions, createProjectVersion, updateProject,
-} = require('../controllers/project');
-const {
-  authMiddleware, authorization, blockNotSelf, CLIENT_CATEGORY,
-} = require('../services/auth');
+const { getProjects, createProjectVersion, updateProject } = require('../controllers/project');
+const { authMiddleware } = require('../services/auth');
 const { validateNormalName } = require('../services/validation');
 
 const router = express.Router();
 
-// project category
-// proejct search
-// router.get('/project/:information', getProjects);
 router.route('/project/:information').get(getProjects).put(updateProject);
 
 router.get('/project/:projectID/version/:information');
 
-router.route('/project/:projectID/version').get(getProejctVersions).post(
+router.post(
+  '/project/:projectID/version',
   authMiddleware,
   [
     body('versionName').custom((versionName) => {

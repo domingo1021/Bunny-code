@@ -1,8 +1,9 @@
 require('dotenv').config();
 const pool = require('../../utils/rmdb');
 
+// TODO: refactor
 const projectDetials = async (projectName) => {
-  // TODO: get project basic data;
+  // get project basic data;
   const projectSQL = `
   SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt,
   u.user_id as userID, u.user_name as userName
@@ -95,8 +96,9 @@ const getAllProjects = async (paging) => {
   return { projects: allProject, page: paging + 1, allPage };
 };
 
+// TODO: refactor
 const createProjectVersion = async (versionName, fileName, projectID) => {
-  // TODO: check whether version name exists.
+  // create new project version according latest version.
   const connection = await pool.getConnection();
   await connection.beginTransaction();
   const getVersionNumber = `
@@ -171,22 +173,6 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
   return returnObject;
 };
 
-const updateVersionName = () => {
-
-};
-
-const updateFileName = () => {
-  // TODO: S3 的檔案怎麼處理？ --> 只新增嗎？ 還是刪除？
-
-};
-
-const getProejctVeriosn = () => {
-  const sql = `
-  SELECT 
-  `;
-  return '';
-};
-
 const updateWatchCount = async (projectID) => {
   const sql = `
   UPDATE project SET watch_count = watch_count + 1 WHERE project_id = ?;
@@ -219,7 +205,6 @@ module.exports = {
   searchProjects,
   getAllProjects,
   createProjectVersion,
-  getProejctVeriosn,
   projectDetials,
   updateWatchCount,
   updateStarCount,
