@@ -17,7 +17,7 @@ async function getVersionInfo(connection, projectID, order) {
   let getVersionSQL = `
   SELECT v.version_id as versionID, v.version_name as versionName, v.version_number as versionNumber
   FROM version as v 
-  WHERE project_id = ?`;
+  WHERE project_id = ? `;
   if (order) {
     getVersionSQL += `ORDER BY v.version_id ${order}`;
   }
@@ -100,56 +100,7 @@ async function getVersionRecord(connection, versionID) {
   return records[0];
 }
 
-// TODO: refactor
-const projectDetials = async (projectName) => {
-  // get project basic data;
-  const projectSQL = `
-  SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt,
-  u.user_id as userID, u.user_name as userName
-  FROM project as p, user as u
-  WHERE project_Name = ? AND deleted = 0 AND u.user_id = p.user_id;
-  `;
-  const versionSQL = `
-  SELECT version_id as versionID, version_name as versionName, version_number as versionNumber, editing
-  FROM version
-  WHERE project_id = ? AND deleted = 0;
-  `;
-  const fileSQL = `
-  SELECT file_id as fileID, file_name as fileName, file_url as fileURL, log, version_id as versionID
-  FROM file
-  WHERE version_id = ? AND deleted = 0 AND hided = 0
-  ORDER BY file_id DESC
-  `;
-  const recordSQL = `
-  SELECT record_id as recordID, base_url as baseURL, start_time as startTime, end_time as endTime, version_id as versionID
-  FROM record
-  WHERE version_id = ? AND deleted = 0;
-  `;
-  const [projectResponse] = await pool.execute(projectSQL, [projectName]);
-  if (projectResponse.length === 0) {
-    return -1;
-  }
-  // TODO: get version data on projectID;
-  const [versionResponse] = await pool.execute(versionSQL, [projectResponse[0].projectID]);
-  // console.log(versionResponse);
-  const fileResponses = await Promise.all(versionResponse.map(async (version) => {
-    const [tmpFileReponse] = await pool.execute(fileSQL, [version.versionID]);
-    return tmpFileReponse;
-  }));
-  const recordResponses = await Promise.all(versionResponse.map(async (version) => {
-    const [tmpFileReponse] = await pool.execute(recordSQL, [version.versionID]);
-    // tmpFileReponse.forEach((response) => {
-    //   response.baseURL = process.env.AWS_DISTRIBUTION_NAME + response.baseURL;
-    // });
-    return tmpFileReponse;
-  }));
-  // console.log(fileResponses);
-  // TODO: get file data on versionID;
-  // TODO: get record data on versionID;
-  return [projectResponse[0], versionResponse, fileResponses, recordResponses];
-};
-
-const projectDetail_v2 = async (projectName) => {
+const projectDetails = async (projectName) => {
   const currentFunctionName = 'projectDetail';
   const connection = await pool.getConnection();
 
@@ -353,8 +304,7 @@ module.exports = {
   searchProjects,
   getAllProjects,
   createProjectVersion,
-  projectDetials,
-  projectDetail_v2,
+  projectDetails,
   updateWatchCount,
   updateStarCount,
   getTopThreeProjects,

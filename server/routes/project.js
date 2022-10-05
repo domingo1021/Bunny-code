@@ -8,14 +8,13 @@ const { Exception } = require('../services/exceptions/exception');
 
 const router = express.Router();
 
-router.route('/project/:information').get(wrapAsync(getProjects))
-  .put(wrapAsync(updateProject));
+router.route('/project/:information').get(wrapAsync(getProjects)).put(wrapAsync(updateProject));
 
-router.get('/project/:projectID/version/:information');
+// router.get('/project/:projectID/version/:information');
 
 router.post(
   '/project/:projectID/version',
-  authMiddleware,
+  wrapAsync(authMiddleware),
   [
     body('versionName').custom((versionName) => {
       if (!validateNormalName(versionName)) {

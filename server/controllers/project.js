@@ -1,7 +1,5 @@
 require('dotenv').config();
-const validator = require('express-validator');
 const Project = require('../models/project');
-const Exception = require('../services/execption');
 
 const searchProjects = async (keywords, paging) => {
   const responseObject = await Project.searchProjects(keywords, paging);
@@ -9,7 +7,7 @@ const searchProjects = async (keywords, paging) => {
 };
 
 const projectDetails = async (projectName) => {
-  const detailResults = await Project.projectDetail_v2(projectName);
+  const detailResults = await Project.projectDetails(projectName);
   const [projectData, versionData, fileData, recordData] = detailResults;
   const versionCompisition = versionData.map((version) => {
     if (!version.files) {
@@ -104,21 +102,10 @@ const updateProject = async (req, res) => {
   }
   switch (information) {
     case 'watch':
-      try {
-        console.log('put call project', +projectID);
-        await Project.updateWatchCount(+projectID);
-      } catch (error) {
-        console.log('update watch count exception: ', error);
-        return res.status(500).json({ msg: 'Internal server error' });
-      }
+      await Project.updateWatchCount(+projectID);
       break;
     case 'star':
-      try {
-        await Project.updateStarCount(+projectID);
-      } catch (error) {
-        console.log('update star count exception: ', error);
-        return res.status(500).json({ msg: 'Internal server error' });
-      }
+      await Project.updateStarCount(+projectID);
       break;
     default:
       return res.status(400).json({ msg: 'Bad request' });
