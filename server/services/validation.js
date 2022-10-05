@@ -3,7 +3,7 @@ const { validationResult } = require('express-validator');
 
 function validateFilter(req, res, next) {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ msg: errors.array() });
+  if (!errors.isEmpty()) return res.status(400).json({ msg: errors.array()[0].msg });
 
   return next();
 }
