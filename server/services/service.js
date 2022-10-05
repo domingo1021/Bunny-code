@@ -1,14 +1,8 @@
 const multer = require('multer');
 const util = require('util');
-// const { exec } = require('child_process');
-const exec = util.promisify(require('child_process').exec);
 const fs = require('fs');
-
-class ServiceException {
-  constructor(msg) {
-    this.msg = msg;
-  }
-}
+const exec = util.promisify(require('child_process').exec);
+const { APIException } = require('./exceptions/api_exception');
 
 const fileUploader = multer({
   storage: multer.memoryStorage(),
@@ -16,9 +10,19 @@ const fileUploader = multer({
     console.log('mimetype: ', file.mimetype);
     const fileSize = parseInt(req.headers['content-length']);
     if (file.mimetype !== 'application/javascript') {
-      cb(new ServiceException('Only javascript file is accepted'));
+      cb(new APIException(
+        'Only javascript file is accepted',
+        `Unexpected mimetype = ${file.mimetype} trying to upload.`,
+        400,
+        'multer',
+      ));
     } else if (fileSize >= 1024 * 1024 * 3) {
-      cb(new ServiceException('File too large.'));
+      cb(new APIException(
+        'File too large.',
+        `Unexpected file size = ${fileSize} too large.`,
+        400,
+        'multer',
+      ));
     } else {
       cb(null, true);
     }
@@ -33,10 +37,16 @@ function wrapAsync(fn) {
 
 async function runCommand(containerName, cmd) {
   // Set if runtime exists.
+  const currentFunctionName = 'runCommand';
   const threshold = 10000;
   const timeout = setTimeout(async () => {
     await exec(`docker kill ${containerName}`);
-    throw new ServiceException('Script executes timeout, runtime exceeds 10 seconds.');
+    throw new APIException(
+      'Script executes timeout, runtime exceeds 10 seconds.',
+      `User code ${cmd} is terminated due to timeout.`,
+      400,
+      currentFunctionName,
+    );
   }, threshold);
 
   // Execute users codes with child process.
@@ -46,10 +56,15 @@ async function runCommand(containerName, cmd) {
     return stdout;
   } catch (error) {
     if (error.stderr === '') {
-      throw new ServiceException(`Runtime error with error code [${error.code}]`);
+      throw new APIException(
+        `Runtime error with error code [${error.code}]`,
+        `Runtime error with error code [${error.code}], for code = ${cmd}`,
+        400,
+        currentFunctionName,
+      );
     }
     clearTimeout(timeout);
-    throw new ServiceException(error.stderr);
+    throw new APIException(error.stderr, 'User run code stderr error', 400, currentFunctionName);
   }
 }
 
@@ -67,7 +82,8 @@ async function compile(userID, fileName, codes) {
       --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
     );
   } catch (error) {
-    compilerResult = error.msg;
+    console.log(error.fullLog);
+    compilerResult = error.message;
   }
   fs.rmSync(userCodeRoute);
   return compilerResult;
@@ -118,7 +134,8 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
         );
         resultStatus = 'success';
       } catch (error) {
-        compilerResults = error.msg;
+        console.log(error.fullLog);
+        compilerResults = error.message;
         resultStatus = 'failed';
       }
       break;
@@ -137,7 +154,8 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
         );
         resultStatus = 'success';
       } catch (error) {
-        compilerResults = error.msg;
+        console.log(error.fullLog);
+        compilerResults = error.message;
         resultStatus = 'failed';
       }
       break;
@@ -156,7 +174,8 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
         );
         resultStatus = 'success';
       } catch (error) {
-        compilerResults = error.msg;
+        console.log(error.fullLog);
+        compilerResults = error.message;
         resultStatus = 'failed';
       }
       break;
@@ -169,5 +188,5 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
 }
 
 module.exports = {
-  wrapAsync, fileUploader, ServiceException, runCommand, compile, leetCodeCompile,
+  wrapAsync, fileUploader, runCommand, compile, leetCodeCompile,
 };
