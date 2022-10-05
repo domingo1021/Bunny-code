@@ -48,13 +48,6 @@ const getBattles = async (req, res) => {
 };
 
 const ifBattleExists = async (req, res) => {
-  // battle name validator.
-  const errors = validator.validationResult(req);
-  if (!errors.isEmpty()) {
-    const errorMessage = errors.array()[0].msg;
-    return res.status(400).json({ msg: errorMessage });
-  }
-
   // check battle detail.
   const { battleName } = req.params;
   const checkExists = await Battle.ifBattleExists(battleName);
