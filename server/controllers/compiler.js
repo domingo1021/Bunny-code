@@ -19,14 +19,6 @@ const writeBattleFile = async (req, res) => {
   return res.status(200).send({ data: 'File uploaded !' });
 };
 
-const getFiles = async (req, res) => {
-  const { versionID } = req.body;
-  const files = await Compiler.getFiles(versionID);
-  return res.status(200).json({
-    data: files,
-  });
-};
-
 const writeFile = async (req, res) => {
   // store S3 result & related info into MySQL DB
   const { versionID } = req.body;
@@ -90,7 +82,6 @@ const writeRecord = async (req, res) => {
 };
 
 const queryRecord = async (req, res) => {
-  // TODO: get time from MySQL DB.
   const { projectID } = req.params;
   const {
     versionID, startTime, stopTime,
@@ -151,5 +142,5 @@ const runCompiler = async (req, res) => {
 };
 
 module.exports = {
-  runCompiler, getFiles, writeFile, writeRecord, queryRecord, writeBattleFile,
+  runCompiler, writeFile, writeRecord, queryRecord, writeBattleFile,
 };
