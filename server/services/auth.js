@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const { Exception } = require('./exceptions/exception');
+const { APIException } = require('./exceptions/api_exception');
 
 // Promise sign
 const createJWTtoken = (payload, exp) => new Promise((resolve, reject) => {
@@ -17,14 +17,15 @@ const createJWTtoken = (payload, exp) => new Promise((resolve, reject) => {
 });
 
 const jwtAuthenticate = async (token) => {
+  const currentFunctionName = 'jwtAuthenticate';
   const jwtToken = token && token.split(' ')[1];
   if (jwtToken === 'null' || !jwtToken) {
-    throw new Exception('Please Login', '401, User authentication failed with no token');
+    throw new APIException('Please Login', '401, User authentication failed with no token', 401, currentFunctionName);
   }
   const decoded = await new Promise((resolve, reject) => {
     jwt.verify(jwtToken, process.env.JWT_SECRET_KEY, (err, auth) => {
       if (err) {
-        return reject(new Exception('Please Login', `403, JWT token ${token} authentication failed`));
+        return reject(new APIException('Please Login', `403, JWT token ${token} authentication failed`, 403, currentFunctionName));
       }
       return resolve(auth);
     });
@@ -34,12 +35,7 @@ const jwtAuthenticate = async (token) => {
 
 const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization;
-  let user;
-  try {
-    user = await jwtAuthenticate(token);
-  } catch (error) {
-    return res.status(error.status).json({ msg: error.msg });
-  }
+  const user = await jwtAuthenticate(token);
   req.user = user;
   return next();
 };

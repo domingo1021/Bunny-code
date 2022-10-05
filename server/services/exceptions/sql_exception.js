@@ -2,10 +2,9 @@ const { Exception } = require('./exception');
 
 class SQLException extends Exception {
   constructor(msg, log, table, queryType, functionName) {
-    super(msg, log);
+    super(msg, log, functionName);
     this.table = table;
     this.queryType = queryType;
-    this.functionName = functionName;
   }
 
   get fullLog() {
@@ -13,7 +12,6 @@ class SQLException extends Exception {
       ...JSON.parse(super.fullLog),
       table: this.table,
       query: this.queryType,
-      function: this.functionName,
     });
   }
 }
