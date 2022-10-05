@@ -9,10 +9,7 @@ const searchProjects = async (keywords, paging) => {
 };
 
 const projectDetails = async (projectName) => {
-  const detailResults = await Project.projectDetials(projectName);
-  if (detailResults === -1) {
-    throw new Exception('Bad request', 400);
-  }
+  const detailResults = await Project.projectDetail_v2(projectName);
   const [projectData, versionData, fileData, recordData] = detailResults;
   const versionCompisition = versionData.map((version) => {
     if (!version.files) {
@@ -22,18 +19,17 @@ const projectDetails = async (projectName) => {
       version.records = [];
     }
     fileData.forEach((file) => {
-      if (file.length !== 0) {
-        if (version.versionID === file[0].versionID) {
-          file[0].fileURL = process.env.AWS_DISTRIBUTION_NAME + file[0].fileURL;
-          version.files.push(file[0]);
-        }
+      if (version.versionID === file.versionID) {
+        file.fileURL = process.env.AWS_DISTRIBUTION_NAME + file.fileURL;
+        version.files.push(file);
       }
     });
     recordData.forEach((record) => {
-      if (record.length !== 0) {
-        if (version.versionID === record[0].versionID) {
-          version.records.push(record[0]);
-        }
+      if (!record) {
+        return;
+      }
+      if (version.versionID === record.versionID) {
+        version.records.push(record);
       }
     });
     return version;
@@ -72,11 +68,7 @@ const getProjects = async (req, res) => {
       if (!projectName) {
         return res.status(400).json({ msg: 'Bad request, please provide proejct id.' });
       }
-      try {
-        responseObject = await projectDetails(projectName);
-      } catch (error) {
-        return res.status(error.status).json({ msg: error.msg });
-      }
+      responseObject = await projectDetails(projectName);
       break;
     case 'top':
       responseObject = await getTopThreeProjects();

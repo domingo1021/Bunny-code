@@ -2,12 +2,25 @@ require('dotenv').config();
 const pool = require('../../utils/rmdb');
 const { SQLException } = require('../services/exceptions/sql_exception');
 
-async function getVersionInfo(connection, projectID) {
-  const getVersionSQL = `
-  SELECT  v.version_id as versionID, v.version_name as versionName, v.version_number as versionNumber
+async function getProjectByName(connection, projectName) {
+  const projectSQL = `
+  SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt,
+  u.user_id as userID, u.user_name as userName
+  FROM project as p, user as u
+  WHERE project_Name = ? AND deleted = 0 AND u.user_id = p.user_id;
+  `;
+  const [projects] = await connection.execute(projectSQL, [projectName]);
+  return projects[0];
+}
+
+async function getVersionInfo(connection, projectID, order) {
+  let getVersionSQL = `
+  SELECT v.version_id as versionID, v.version_name as versionName, v.version_number as versionNumber
   FROM version as v 
-  WHERE project_id = ?
-  ORDER BY v.version_id DESC`;
+  WHERE project_id = ?`;
+  if (order) {
+    getVersionSQL += `ORDER BY v.version_id ${order}`;
+  }
   const [versionInfo] = await connection.execute(getVersionSQL, [projectID]);
   return versionInfo;
 }
@@ -36,15 +49,26 @@ async function appendProjectVersion(connection, versionInfo) {
   }
 }
 
-async function getLatestFile(connection, versionID) {
+async function cloneLatestFile(connection, versionID) {
   const latestFile = `
   SELECT file_name as fileName, file_url as fileUrl, log 
   FROM file
-  WHERE version_id = ? AND deleted = 0
+  WHERE version_id = ? AND deleted = 0 AND hided = 0
   ORDER BY file_id DESC
   `;
   const [fileResponse] = await connection.execute(latestFile, [versionID]);
   return fileResponse;
+}
+
+async function getFileDetail(connection, versionID) {
+  const fileSQL = `
+  SELECT file_id as fileID, file_name as fileName, file_url as fileURL, log, version_id as versionID
+  FROM file
+  WHERE version_id = ? AND deleted = 0 AND hided = 0
+  ORDER BY file_id DESC
+  `;
+  const [files] = await connection.execute(fileSQL, [versionID]);
+  return files[0];
 }
 
 async function appendVersionFile(connection, fileInfo) {
@@ -63,6 +87,17 @@ async function appendVersionFile(connection, fileInfo) {
     console.log(`Append version file error: ${error}`);
     return 0;
   }
+}
+
+async function getVersionRecord(connection, versionID) {
+  const recordSQL = `
+  SELECT record_id as recordID, base_url as baseURL, start_time as startTime, end_time as endTime, version_id as versionID
+  FROM record
+  WHERE version_id = ? AND deleted = 0;
+  `;
+  console.log('Version id: ', versionID);
+  const [records] = await connection.execute(recordSQL, [versionID]);
+  return records[0];
 }
 
 // TODO: refactor
@@ -112,6 +147,37 @@ const projectDetials = async (projectName) => {
   // TODO: get file data on versionID;
   // TODO: get record data on versionID;
   return [projectResponse[0], versionResponse, fileResponses, recordResponses];
+};
+
+const projectDetail_v2 = async (projectName) => {
+  const currentFunctionName = 'projectDetail';
+  const connection = await pool.getConnection();
+
+  // get specific project with project name.
+  const project = await getProjectByName(connection, projectName);
+  if (!project) {
+    throw new SQLException(
+      'Project not found',
+      `Cannot find project with project name = ${projectName}`,
+      'project',
+      'select',
+      currentFunctionName,
+    );
+  }
+
+  // get the project's version info.
+  const versions = await getVersionInfo(connection, project.projectID);
+  // get file info for the version.
+  const files = await Promise.all(
+    versions.map(async (version) => getFileDetail(connection, version.versionID)),
+  );
+
+  const records = await Promise.all(
+    versions.map(async (version) => getVersionRecord(connection, version.versionID)),
+  );
+  console.log('records: ', records);
+
+  return [project, versions, files, records];
 };
 
 const searchProjects = async (keywords, paging) => {
@@ -167,7 +233,7 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
   await connection.beginTransaction();
 
   // get existing version data.
-  const versionInfo = await getVersionInfo(connection, projectID);
+  const versionInfo = await getVersionInfo(connection, projectID, 'DESC');
 
   // check if version name (unique) have existed.
   const hasExisted = checkVersionExists(versionInfo, versionName);
@@ -199,7 +265,7 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
   console.log(`New version ID created: ${versionID}`);
 
   // Select latest file for the previous version.
-  const fileInfo = await getLatestFile(connection, versionInfo[0].versionID);
+  const fileInfo = await cloneLatestFile(connection, versionInfo[0].versionID);
 
   // Check if latest exists success.
   if (fileInfo.length === 0) {
@@ -288,6 +354,7 @@ module.exports = {
   getAllProjects,
   createProjectVersion,
   projectDetials,
+  projectDetail_v2,
   updateWatchCount,
   updateStarCount,
   getTopThreeProjects,

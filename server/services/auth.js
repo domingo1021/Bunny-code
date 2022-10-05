@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const { Exception } = require('./exceptions/exception');
 
 // Promise sign
 const createJWTtoken = (payload, exp) => new Promise((resolve, reject) => {
@@ -15,22 +16,15 @@ const createJWTtoken = (payload, exp) => new Promise((resolve, reject) => {
   );
 });
 
-class AuthenticationError {
-  constructor(status, msg) {
-    this.status = status;
-    this.msg = msg;
-  }
-}
-
 const jwtAuthenticate = async (token) => {
   const jwtToken = token && token.split(' ')[1];
   if (jwtToken === 'null' || !jwtToken) {
-    throw new AuthenticationError(401, 'Please provide token');
+    throw new Exception('Please Login', '401, User authentication failed with no token');
   }
   const decoded = await new Promise((resolve, reject) => {
     jwt.verify(jwtToken, process.env.JWT_SECRET_KEY, (err, auth) => {
       if (err) {
-        return reject(new AuthenticationError(403, 'Forbidden'));
+        return reject(new Exception('Please Login', `403, JWT token ${token} authentication failed`));
       }
       return resolve(auth);
     });
@@ -117,5 +111,11 @@ const blockSelf = (req, res, next) => {
 };
 
 module.exports = {
-  createJWTtoken, authMiddleware, AuthenticationError, jwtAuthenticate, authorization, blockNotSelf, blockSelf, CLIENT_CATEGORY,
+  createJWTtoken,
+  authMiddleware,
+  jwtAuthenticate,
+  authorization,
+  blockNotSelf,
+  blockSelf,
+  CLIENT_CATEGORY,
 };
