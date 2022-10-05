@@ -16,12 +16,14 @@ const projectDetails = async (projectName) => {
     if (!version.records) {
       version.records = [];
     }
+    // compose file for version.
     fileData.forEach((file) => {
       if (version.versionID === file.versionID) {
         file.fileURL = process.env.AWS_DISTRIBUTION_NAME + file.fileURL;
         version.files.push(file);
       }
     });
+    // compose record for version.
     recordData.forEach((record) => {
       if (!record) {
         return;
@@ -57,7 +59,7 @@ const getProjects = async (req, res) => {
   switch (information) {
     case 'search':
       if (!keywords) {
-        responseObject = await getAllProjects();
+        responseObject = await getAllProjects(+paging);
       } else {
         responseObject = await searchProjects(keywords, +paging);
       }
@@ -76,7 +78,6 @@ const getProjects = async (req, res) => {
       responseObject = await getAllProjects(+paging);
       break;
   }
-  // await Project.getAllProjects();
   return res.status(200).json({
     data: responseObject,
   });
@@ -94,7 +95,6 @@ const createProjectVersion = async (req, res) => {
 };
 
 const updateProject = async (req, res) => {
-  // TODO: update user status or add new record when user click star.
   const { information } = req.params;
   const { projectID } = req.query;
   if (!projectID) {
