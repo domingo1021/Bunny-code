@@ -132,7 +132,6 @@ const projectDetails = async (projectName) => {
 };
 
 const searchProjects = async (keywords, paging) => {
-  console.log(keywords, paging);
   const sql = `SELECT p.project_id as projectID, p.project_name as projectName, p.project_description as projectDescription, p.watch_count as watchCount, p.star_count as starCount, p.create_at as createAt, 
   u.user_name as userName, u.user_id as userID
   FROM project as p
@@ -150,8 +149,12 @@ const searchProjects = async (keywords, paging) => {
   WHERE p.deleted = 0 AND is_public = 1 AND (p.project_name LIKE ? OR p.project_description LIKE ? OR u.user_name LIKE ?);`;
   const connection = await pool.getConnection();
   const likeString = `%${keywords}%`;
-  const limitCount = paging * 6;
-  const [keywordProducts] = await connection.query(sql, [likeString, likeString, likeString, 6, limitCount]);
+  const limitCount = `${paging * 6}`;
+  const perPage = '6';
+  const [keywordProducts] = await connection.execute(
+    sql,
+    [likeString, likeString, likeString, perPage, limitCount],
+  );
   const [projectCounts] = await connection.execute(countSQL, [likeString, likeString, likeString]);
   const allPage = Math.ceil(projectCounts[0].count / 6);
   connection.release();
@@ -169,8 +172,9 @@ const getAllProjects = async (paging) => {
   ORDER BY create_at DESC
   LIMIT ? OFFSET ?`;
   const countSQL = 'SELECT count(project_id) as count FROM project WHERE deleted = 0 AND is_public = 1;';
-  const limitCount = paging * 6;
-  const [allProject] = await connection.query(sql, [6, limitCount]);
+  const limitCount = `${paging * 6}`;
+  const perPage = '6';
+  const [allProject] = await connection.execute(sql, [perPage, limitCount]);
   const [projectCounts] = await connection.execute(countSQL);
   const allPage = Math.floor(projectCounts[0].count / 6) + 1;
   connection.release();
