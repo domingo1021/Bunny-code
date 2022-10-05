@@ -1,4 +1,4 @@
-const express = require('express');
+const router = require('express').Router();
 const { body } = require('express-validator');
 const {
   userSignUp,
@@ -16,8 +16,6 @@ const {
 const {
   authMiddleware, authorization, blockNotSelf, CLIENT_CATEGORY,
 } = require('../services/auth');
-
-const router = express.Router();
 
 router.post(
   '/user/signup',
