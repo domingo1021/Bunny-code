@@ -7,7 +7,6 @@ const {
 const port = NODE_ENV === 'test' ? TEST_PORT : SERVER_PORT;
 const cors = require('cors');
 const Cache = require('./utils/cache');
-const { ServiceException } = require('./server/services/service');
 const { APIException } = require('./server/services/exceptions/api_exception');
 const { SQLException } = require('./server/services/exceptions/sql_exception');
 
@@ -41,7 +40,7 @@ app.use((err, req, res, next) => {
     return res.status(err.status).json({ msg: err.message });
   }
   console.log(err);
-  return res.status(500).send('Internal Server Error');
+  return res.status(500).json({ msg: 'Internal Server Error' });
 });
 
 const httpServer = app.listen(port, () => {
