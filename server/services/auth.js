@@ -25,6 +25,7 @@ const jwtAuthenticate = async (token) => {
   const decoded = await new Promise((resolve, reject) => {
     jwt.verify(jwtToken, process.env.JWT_SECRET_KEY, (err, auth) => {
       if (err) {
+        // If for more specifi: if want to track user lifecycle, keep user id to further funciotn.
         return reject(new APIException('Please Login', `403, JWT token ${token} authentication failed`, 403, currentFunctionName));
       }
       return resolve(auth);
@@ -70,6 +71,7 @@ const authorization = async (req, res, next) => {
     req.clientCategory = CLIENT_CATEGORY.visitor;
     return next();
   }
+  console.log(`User id=${userDetail.user_id} call auth api, with params userID=${userID}`);
 
   req.user.id = userDetail.user_id;
   if (userDetail.user_id === +userID) {
@@ -82,7 +84,6 @@ const authorization = async (req, res, next) => {
 
 function blockNotSelf(blockCategories) {
   return (req, res, next) => {
-    console.log('User category: ', req.clientCategory);
     if (
       blockCategories.includes(CLIENT_CATEGORY.visitor)
       && req.clientCategory === CLIENT_CATEGORY.visitor
