@@ -14,4 +14,10 @@ class Exception extends Error {
   }
 }
 
-module.exports = { Exception };
+const exceptionPriority = {
+  normal: 0,
+  warning: 1,
+  error: 2,
+};
+
+module.exports = { Exception, exceptionPriority };
