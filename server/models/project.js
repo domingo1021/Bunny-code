@@ -35,6 +35,7 @@ function checkVersionExists(versionInfo, versionName) {
 }
 
 async function appendProjectVersion(connection, versionInfo) {
+  const currentFunctionName = 'appendProjectVersion';
   const createVersionSQL = 'INSERT INTO version (version_name, version_number, project_id) VALUES (?, ?, ?);';
   try {
     const [insertResult] = await connection.execute(createVersionSQL, [
@@ -45,7 +46,9 @@ async function appendProjectVersion(connection, versionInfo) {
     return insertResult.insertId;
   } catch (error) {
     console.log(`Append project version error: ${error}`);
-    return 0;
+    await connection.rollback();
+    connection.release();
+    throw new SQLException('Version already exists.', 'Duplicated version ID', 'version', 'insert', currentFunctionName);
   }
 }
 
@@ -72,10 +75,10 @@ async function getFileDetail(connection, versionID) {
 }
 
 async function appendVersionFile(connection, fileInfo) {
+  const currentFunctionName = 'appendVersionFile';
   const appendFileSQL = `
   INSERT INTO file (file_name, file_url, log, version_id) VALUES (?, ?, ?, ?)`;
   try {
-    console.log(fileInfo);
     const [insertResult] = await connection.execute(appendFileSQL, [
       fileInfo.fileName,
       fileInfo.fileURL,
@@ -85,7 +88,15 @@ async function appendVersionFile(connection, fileInfo) {
     return insertResult.insertId;
   } catch (error) {
     console.log(`Append version file error: ${error}`);
-    return 0;
+    await connection.rollback();
+    connection.release();
+    throw new SQLException(
+      'Create file failed',
+      `Unexpected result to create file for versionID=${fileInfo.versionID}`,
+      'file',
+      'insert',
+      currentFunctionName,
+    );
   }
 }
 
@@ -210,13 +221,6 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
     versionNumber,
     projectID,
   });
-
-  // Check if append new version success.
-  if (versionID === 0) {
-    await connection.rollback();
-    connection.release();
-    throw new SQLException('Version already exists.', 'Duplicated version ID', 'version', 'insert', currentFunctionName);
-  }
   console.log(`New version ID created: ${versionID}`);
 
   // Select latest file for the previous version.
@@ -242,19 +246,6 @@ const createProjectVersion = async (versionName, fileName, projectID) => {
     log: fileInfo[0].log,
     versionID,
   });
-
-  // Check if append new file success.
-  if (fileID === 0) {
-    await connection.rollback();
-    connection.release();
-    throw new SQLException(
-      'Create file failed',
-      `Unexpected result to create file for projectID=${projectID} & versionID=${versionID}`,
-      'file',
-      'insert',
-      currentFunctionName,
-    );
-  }
   console.log(`New file ID created: ${fileID}`);
 
   await connection.commit();
@@ -305,6 +296,8 @@ const getTopThreeProjects = async () => {
 };
 
 module.exports = {
+  appendProjectVersion,
+  appendVersionFile,
   searchProjects,
   getAllProjects,
   createProjectVersion,
