@@ -29,10 +29,19 @@ const fileUploader = multer({
   },
 }).array('files', 5);
 
+// wrap async function with try.. ctach..
 function wrapAsync(fn) {
   return (req, res, next) => {
     fn(req, res, next).catch(next);
   };
+}
+
+// send console log into event queue
+// do the console.log only when call stack is clean.
+function setLog(msg) {
+  setTimeout(() => {
+    console.log(msg);
+  }, 0);
 }
 
 async function runCommand(containerName, cmd) {
