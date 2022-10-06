@@ -1,5 +1,4 @@
 require('dotenv').config();
-const validator = require('express-validator');
 const Battle = require('../models/battle');
 
 const getBattles = async (req, res) => {
