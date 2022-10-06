@@ -25,7 +25,7 @@ const jwtAuthenticate = async (token) => {
   const decoded = await new Promise((resolve, reject) => {
     jwt.verify(jwtToken, process.env.JWT_SECRET_KEY, (err, auth) => {
       if (err) {
-        // If for more specifi: if want to track user lifecycle, keep user id to further funciotn.
+        // If for more specific: if want to track user lifecycle, keep user id to further funciotn.
         return reject(new APIException('Please Login', `403, JWT token ${token} authentication failed`, 403, currentFunctionName));
       }
       return resolve(auth);
