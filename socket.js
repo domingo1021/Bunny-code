@@ -15,9 +15,7 @@ const io = new Server(httpServer, {
   },
 });
 
-const {
-  queryBattler, createBattle, battleFinish, addBattleWatch, getWinnerData, deleteBattle,
-} = require('./socket/controllers/battle_controller')(io);
+const Battle = require('./socket/controllers/battle_controller')(io);
 const Editor = require('./socket/controllers/editor_controller')(io);
 
 // socket auth with middleware
@@ -36,7 +34,6 @@ io.use(async (socket, next) => {
 
 io.on('connection', wrapAsync(async (socket) => {
   console.log(`socketID: ${socket.id} come in`);
-
   // for workspace
   socket.on('checkProjectStatus', Editor.checkProjectAuth);
   socket.on('changeEdit', Editor.editVersion);
@@ -136,58 +133,7 @@ io.on('connection', wrapAsync(async (socket) => {
     }
   });
 
-  socket.on('queryBattler', async (queryObject) => {
-    socket.category = 'battle';
-    console.log(`user in, with queryObject: ${JSON.stringify(queryObject)}`);
-    const battleResponse = await queryBattler(queryObject.battleID);
-    // battle not found.
-    if (battleResponse === null) {
-      socket.emit('battleNotFound');
-      return;
-    }
-    // battle have already finished, redirect.
-    if (Object.keys(battleResponse).length === 0) {
-      console.log('Battle finished.');
-      socket.emit('battleFinished');
-      return;
-    }
-    // check user status.
-    let userCategory = CLIENT_CATEGORY.visitor;
-    if ([battleResponse.firstUserID, battleResponse.secondUserID].includes(socket.user.id)) {
-      userCategory = CLIENT_CATEGORY.self;
-    }
-    // input: battleID
-    socket.battleID = `battle-${queryObject.battleID}`;
-    // user join battle socket room.
-    socket.join(socket.battleID);
-    const battleObject = await Cache.HGETALL(`${socket.battleID}`);
-    const { firstUserID, secondUserID, answer } = battleResponse;
-    // TODO: Set battle object if the battle not exists
-    if (Object.keys(battleObject).length === 0) {
-      socket.emit('battleNotFound');
-      return;
-    }
-    if (![firstUserID, secondUserID].includes(socket.user.id)) {
-      await addBattleWatch(queryObject.battleID);
-    }
-    socket.emit('returnBattler', {
-      battleResponse,
-      userID: socket.user.id,
-      category: userCategory,
-      firstUserObject: {
-        ready: JSON.parse(battleObject[`${battleResponse.firstUserID}`]).ready,
-        codes: JSON.parse(battleObject[`${battleResponse.firstUserID}`]).codes,
-        chance: JSON.parse(battleObject[`${battleResponse.firstUserID}`]).chance,
-      },
-      secondUserObject: {
-        ready: JSON.parse(battleObject[`${battleResponse.secondUserID}`]).ready,
-        codes: JSON.parse(battleObject[`${battleResponse.secondUserID}`]).codes,
-        chance: JSON.parse(battleObject[`${battleResponse.secondUserID}`]).chance,
-      },
-    });
-    console.log('prepare to send room msg');
-    socket.to(socket.battleID).emit('in', `user #${socket.user.id} come in.`);
-  });
+  socket.on('queryBattler', Battle.queryBattler);
 
   socket.on('newCodes', async (recordObject) => {
     await Cache.executeIsolated(async (isolatedClient) => {
@@ -199,16 +145,6 @@ io.on('connection', wrapAsync(async (socket) => {
     });
     socket.to(socket.battleID).emit('newCodes', recordObject);
   });
-
-  // socket.on('searchUsers', async (userName) => {
-  //   if (!userName) {
-  //     socket.emit('responseUsers', ({
-  //       msg: 'Lake of data',
-  //     }));
-  //   }
-  //   const searchResponse = await getUserByName(userName);
-  //   socket.emit('responseUsers', searchResponse);
-  // });
 
   socket.on('compile', async (queryObject) => {
     const battleObject = await Cache.hGetAll(`${socket.battleID}`);
@@ -341,6 +277,7 @@ io.on('connection', wrapAsync(async (socket) => {
       return;
     }
     await Cache.executeIsolated(async (isolatedClient) => {
+      console.log(socket.id);
       const battleID = socket.battleID.split('-')[1];
       await isolatedClient.watch(battleID);
       const battleObject = await isolatedClient.HGETALL(socket.battleID);
