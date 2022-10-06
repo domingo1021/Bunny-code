@@ -1,15 +1,10 @@
 const { Server } = require('socket.io');
-const httpServer = require('./app');
-const { jwtAuthenticate, AuthenticationError } = require('./server/services/auth');
-const { authorization, CLIENT_CATEGORY } = require('./socket/util');
-const {
-  queryBattler, createBattle, battleFinish, addBattleWatch, getWinnerData, deleteBattle,
-} = require('./socket/battle');
-const { versionEditStatus, editVersion, unEditing } = require('./socket/editor');
-const { getUserByName } = require('./socket/user');
-const { compile, leetCodeCompile } = require('./server/services/service');
+const { httpServer } = require('./app');
+const { jwtAuthenticate } = require('./server/services/auth');
+const { leetCodeCompile } = require('./server/services/service');
+const { wrapAsync } = require('./socket/services/service');
+const { CLIENT_CATEGORY } = require('./socket/util');
 const Cache = require('./utils/cache');
-// const { writeRecord, queryRecord } = require('./server/controllers/codeRecord');
 
 const io = new Server(httpServer, {
   path: '/api/socket/',
@@ -19,112 +14,34 @@ const io = new Server(httpServer, {
     credentials: true,
   },
 });
-// TODO: socket auth with middleware
 
+const {
+  queryBattler, createBattle, battleFinish, addBattleWatch, getWinnerData, deleteBattle,
+} = require('./socket/controllers/battle_controller')(io);
+const Editor = require('./socket/controllers/editor_controller')(io);
+
+// socket auth with middleware
 io.use(async (socket, next) => {
-  // authentication user token;
   const jwtToken = socket.handshake.auth.token;
   let userPayload;
   try {
     userPayload = await jwtAuthenticate(jwtToken);
+    socket.user = userPayload;
+    next();
   } catch (error) {
-    console.log('error: ', error);
-    userPayload = {
-      id: -1,
-      name: 'visitor',
-    };
+    console.log(error.fullLog);
+    next(error);
   }
-  socket.user = userPayload;
-  next();
 });
-// TODO: 當 connection 時，需辨認進入的 socket 種類，Editor 的部分也需要使用到 socket (表示使用者正在編輯);
-// TODO: 如果是本人進入頁面（認為想要 edit）, 則建立 Socket, 並更動 edit 狀態，
 
-io.on('connection', async (socket) => {
+io.on('connection', wrapAsync(async (socket) => {
   console.log(`socketID: ${socket.id} come in`);
+
   // for workspace
-  socket.on('checkProjectStatus', async (projectObject) => {
-    console.log(`user #${socket.user.id} connecting...`);
-    socket.category = 'workspace';
-    let responseObject = {
-      readOnly: true,
-      authorization: false,
-    };
-    if (socket.user.id === -1 || !projectObject.versionID || !projectObject.projectID) {
-      socket.emit('statusChecked', responseObject);
-      return;
-    }
-    responseObject = await versionEditStatus(socket.user.id, projectObject.projectID, projectObject.versionID);
-    socket.versionID = `version-${projectObject.versionID}`;
-    if (!responseObject.readOnly) {
-      if (Cache.ready) {
-        await Cache.set(`${socket.versionID}`, `${socket.id}`);
-      }
-    }
-    console.log(responseObject);
-    socket.emit('statusChecked', responseObject);
-  });
-
-  // TODO: have to disconnect user who has been editing the version;
-  socket.on('changeEdit', async (projectObject) => {
-    const viewerResponse = {
-      readOnly: true,
-      authorization: false,
-    };
-    if (socket.user.id === -1 || !projectObject.versionID || !projectObject.projectID) {
-      socket.emit('statusChecked', viewerResponse);
-      return;
-    }
-    const [killObject, userObject] = await editVersion(socket.user.id, projectObject.projectID, projectObject.versionID);
-    if (killObject.kill) {
-      await Cache.executeIsolated(async (isolatedClient) => {
-        await isolatedClient.watch(`${socket.versionID}`);
-        const socketID = await Cache.get(`${socket.versionID}`);
-        if (socketID !== null) {
-          console.log(`ready to kill a socket ${socketID}`);
-          io.sockets.sockets.forEach((ws) => {
-            if (ws.id === socketID) { ws.disconnect(true); }
-          });
-          if (socketID === socket.id) {
-            console.log(`redis delete socket with id ${socketID}`);
-            isolatedClient.del(`${socket.versionID}`);
-          }
-        }
-        await Cache.set(`${socket.versionID}`, `${socket.id}`);
-      });
-    } else if (Cache.ready) {
-      await Cache.set(`${socket.versionID}`, `${socket.id}`);
-    }
-    socket.versionID = `version-${projectObject.versionID}`;
-    // 存入 Redis, 表示某個 socket 正在編輯程式碼
-    // Redis SET key = versionID, value = socketID
-    console.log('status check responseObject: ', userObject);
-    socket.emit('statusChecked', userObject);
-  });
-
-  socket.on('leaveWorkspace', () => {
-    socket.versionID = undefined;
-  });
-
-  socket.on('unEdit', async (emitObject) => {
-    console.log('socket version id: ', socket.versionID);
-    // check userID and project relationship, whether user have the auth of project.
-    if (Cache.ready) {
-      await Cache.executeIsolated(async (isolatedClient) => {
-        await isolatedClient.watch(`${socket.versionID}`);
-        const socketID = await isolatedClient.get(`${socket.versionID}`);
-        console.log('socketID: ', socketID, socket.id);
-        if (socketID !== null) {
-          if (socketID === socket.id) {
-            console.log(`DB update edit status of version-${socket.versionID}`);
-            await unEditing(emitObject.versionID);
-            console.log(`redis delete socket with id ${socketID}`);
-            isolatedClient.del(`${socket.versionID}`);
-          }
-        }
-      });
-    }
-  });
+  socket.on('checkProjectStatus', Editor.checkProjectAuth);
+  socket.on('changeEdit', Editor.editVersion);
+  socket.on('leaveWorkspace', Editor.leaveWorkspace);
+  socket.on('unEdit', Editor.unEdit);
 
   socket.on('inviteBattle', async (emitObject) => {
     const battleObject = {
@@ -193,7 +110,7 @@ io.on('connection', async (socket) => {
   });
 
   socket.on('setReady', async (emitObject) => {
-  // { battleID, currentUserID, anotherUserID }
+    // { battleID, currentUserID, anotherUserID }
     if (emitObject.currentUserID !== socket.user.id) {
       return;
     }
@@ -283,15 +200,15 @@ io.on('connection', async (socket) => {
     socket.to(socket.battleID).emit('newCodes', recordObject);
   });
 
-  socket.on('searchUsers', async (userName) => {
-    if (!userName) {
-      socket.emit('responseUsers', ({
-        msg: 'Lake of data',
-      }));
-    }
-    const searchResponse = await getUserByName(userName);
-    socket.emit('responseUsers', searchResponse);
-  });
+  // socket.on('searchUsers', async (userName) => {
+  //   if (!userName) {
+  //     socket.emit('responseUsers', ({
+  //       msg: 'Lake of data',
+  //     }));
+  //   }
+  //   const searchResponse = await getUserByName(userName);
+  //   socket.emit('responseUsers', searchResponse);
+  // });
 
   socket.on('compile', async (queryObject) => {
     const battleObject = await Cache.hGetAll(`${socket.battleID}`);
@@ -498,8 +415,7 @@ io.on('connection', async (socket) => {
     // // check if user in battle room, otherwise, update user project status to unediting.
     // console.log(`#${socket.user.id} user disconnection.`);
   });
-
   socket.on('error', () => {
     socket.disconnect();
   });
-});
+}));
