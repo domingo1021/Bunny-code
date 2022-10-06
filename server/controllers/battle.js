@@ -36,12 +36,15 @@ const getBattles = async (req, res) => {
       data: [],
     });
   }
+
+  // Add CDN url to picture.
   const battles = [];
   for (let i = 0; i < firstBattler.length; i += 1) {
     firstBattler[i].firstUserPicture = process.env.AWS_DISTRIBUTION_NAME + firstBattler[i].firstUserPicture;
     secondBattler[i].secondUserPicture = process.env.AWS_DISTRIBUTION_NAME + secondBattler[i].secondUserPicture;
     battles.push({ ...firstBattler[i], ...secondBattler[i] });
   }
+
   return res.status(200).json({
     data: battles,
   });
