@@ -1,7 +1,7 @@
 require('dotenv').config();
 const Cache = require('../../utils/cache');
 const Battle = require('../models/battle_model');
-const { CLIENT_CATEGORY } = require('../util');
+const { CLIENT_CATEGORY } = require('../services/service');
 const { SocketException } = require('../../server/services/exceptions/socketException');
 const { checkCacheReady } = require('../services/service');
 const { leetCodeCompile } = require('../../server/services/service');
