@@ -97,9 +97,11 @@ const getUserProjects = async (req, res) => {
   let projects;
   try {
     // if project user himself, then get all projects; else then only return public.
-    if (userID === userPayload.id) {
+    if (+userID === userPayload.id) {
+      console.log(`User(id=${userPayload.id}) is getting all project`);
       projects = await User.getUserProjects(userID, 'all', keyword, paging);
     } else {
+      console.log(`User(id=${userPayload.id}) is visiting user(id=${userID}) projects`);
       projects = await User.getUserProjects(userID, 'public', keyword, paging);
     }
   } catch (error) {
