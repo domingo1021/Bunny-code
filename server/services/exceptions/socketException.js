@@ -6,6 +6,14 @@ class SocketException extends Exception {
     this.status = status;
     this.event = event;
   }
+
+  get fullLog() {
+    return JSON.stringify({
+      ...JSON.parse(super.fullLog),
+      status: this.status,
+      event: this.event,
+    });
+  }
 }
 
 module.exports = { SocketException };

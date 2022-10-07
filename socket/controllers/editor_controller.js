@@ -5,9 +5,7 @@ const { checkCacheReady } = require('../services/service');
 
 let ioServer;
 
-async function checkProjectAuth(project) {
-  // userID, projectID, versionID
-  const socket = this;
+async function checkProjectAuth(socket, project) {
   socket.category = 'workspace';
   let response = {
     readOnly: true,
@@ -29,8 +27,7 @@ async function checkProjectAuth(project) {
   socket.emit('statusChecked', response);
 }
 
-async function editVersion(project) {
-  const socket = this;
+async function editVersion(socket, project) {
   const viewerResponse = {
     readOnly: true,
     authorization: false,
@@ -75,13 +72,11 @@ async function editVersion(project) {
   return socket.emit('statusChecked', authObject);
 }
 
-function leaveWorkspace() {
-  const socket = this;
+function leaveWorkspace(socket) {
   socket.versionID = undefined;
 }
 
-async function unEdit(version) {
-  const socket = this;
+async function unEdit(socket, version) {
   console.log(`User(id=${socket.user.id}) is unediting..`);
 
   checkCacheReady();

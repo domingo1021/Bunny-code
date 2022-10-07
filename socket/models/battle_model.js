@@ -1,5 +1,6 @@
 const pool = require('../../utils/rmdb');
 const { SocketException } = require('../../server/services/exceptions/socketException');
+const { Exception } = require('../../server/services/exceptions/exception');
 
 async function getFirstBattler(connection, battleID) {
   const firstSQL = `
@@ -21,6 +22,55 @@ async function getSecondBattler(connection, battleID) {
   `;
   const [secondBattler] = await connection.execute(secondSQL, [battleID]);
   return secondBattler;
+}
+
+async function getQuestionAnswer(connection, battleLevel) {
+  const questionBattle = `
+  SELECT q.question_id as questionID, a.answer_number as answerNumber, a.test_case as testCase, a.output 
+  FROM question as q, answer as a 
+  WHERE q.question_level = ? AND a.question_id = q.question_id;
+  `;
+  const [questionResult] = await connection.execute(questionBattle, [battleLevel]);
+  const { questionID } = questionResult[0];
+  const answer = questionResult.map((result) => {
+    const answerObject = {};
+    const testObject = {};
+    testObject[`${result.testCase}`] = result.output;
+    answerObject[`answer-${result.answerNumber}`] = JSON.stringify(testObject);
+    return answerObject;
+  });
+  return { questionID, answer };
+}
+
+async function insertBattle(connection, battleName, firstUserID, secondUserID, questionID) {
+  const battleSQL = `
+  INSERT INTO battle (battle_name, first_user_id, second_user_id, question_id) 
+  VALUES (?, ?, ?, ?)`;
+  try {
+    const [newBattle] = await connection.execute(
+      battleSQL,
+      [battleName, firstUserID, secondUserID, questionID],
+    );
+    return newBattle.insertId;
+  } catch (error) {
+    console.log(error);
+    if (error.sqlMessage.includes('Duplicate')) {
+      throw new SocketException(
+        'Battle name already in use',
+        `User search battle(name=${battleName}) failed)`,
+        400,
+        'battleFailed',
+        'insertBattle',
+      );
+    }
+    throw new SocketException(
+      'Create battle failed',
+      `Unexpected failed when creating battle ${error.stack}`,
+      400,
+      'battleFailed',
+      'insertBattle',
+    );
+  }
 }
 
 const queryBattler = async (battleID) => {
@@ -74,4 +124,55 @@ const addBattleWatch = async (battleID) => {
   await pool.execute(updateSQL, [battleID]);
 };
 
-module.exports = { queryBattler, addBattleWatch };
+const createBattle = async (battleName, battleLevel, firstUserID, secondUserID) => {
+  const connection = await pool.getConnection();
+  const { questionID, answer } = await getQuestionAnswer(connection, battleLevel);
+  const battleID = await insertBattle(connection, battleName, firstUserID, secondUserID, questionID);
+  return { battleID, answer };
+};
+
+const battleFinish = async (battleID, userID) => {
+  const connection = await pool.getConnection();
+  const finishSQL = 'UPDATE battle SET winner_id = ?, is_finish = 1 WHERE battle_id = ?';
+  await connection.execute(finishSQL, [userID, battleID]);
+  const userSQL = 'SELECT user_name FROM user WHERE user_id = ?';
+  const [targetUser] = await connection.execute(userSQL, [userID]);
+  connection.release();
+  return {
+    winnerID: userID,
+    winnerName: targetUser[0].user_name,
+  };
+};
+
+const getWinnerData = async (battleID) => {
+  const winnerSQL = `
+    SELECT b.battle_name as battleName, b.watch_count as watchCount, b.winner_id as winnerID, b.winner_url as winnerURL, 
+    b.question_id as questionID, q.question_name as questionName, q.question_url as questionURL, q.question_level as level,
+    u.user_name as userName, u.email, u.profile as profile, u.picture, u.level as userLevel
+    FROM battle as b, question as q, user as u
+    WHERE b.battle_id = ? AND b.winner_id = u.user_id AND b.question_id = q.question_id;
+  `;
+  const [winnerObject] = await pool.execute(winnerSQL, [battleID]);
+  if (winnerObject.length === 0) {
+    return null;
+  }
+  winnerObject[0].winnerURL = process.env.AWS_DISTRIBUTION_NAME + winnerObject[0].winnerURL;
+  winnerObject[0].questionURL = process.env.AWS_DISTRIBUTION_NAME + winnerObject[0].questionURL;
+  winnerObject[0].picture = process.env.AWS_DISTRIBUTION_NAME + winnerObject[0].picture;
+  return winnerObject[0];
+};
+
+const deleteBattle = async (battleID) => {
+  const deleteSQL = `
+    UPDATE battle SET deleted = 1, is_finish = 1 WHERE battle_id = ?;
+  `;
+  try {
+    await pool.execute(deleteSQL, [battleID]);
+  } catch (error) {
+    throw new Exception('Internal server error', `Delete battle(id=${battleID}) failed.`, 'deleteBattle');
+  }
+};
+
+module.exports = {
+  queryBattler, addBattleWatch, createBattle, battleFinish, getWinnerData, deleteBattle,
+};
