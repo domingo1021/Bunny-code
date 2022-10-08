@@ -1,0 +1,44 @@
+version: '1.0'
+
+services:
+  web:
+    image: 'bunny-web:latest'
+    container_name: bunny_web
+    ports:
+      - '3000:3000'
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=
+      - DB_PASSWORD=
+      - DB_DATABASE=
+      - CACHE_HOST=redis
+      - CACHE_PORT=6379
+      - CACHE_USER=
+      - CACHE_PASSWORD=
+    depends_on:
+      - mysql
+      - redis
+  redis:
+    image: 'bunny-redis:latest'
+    container_name: bunny_redis
+    ports:
+      - '6379:6379'
+  mysql:
+    image: 'bunny-mysql:latest'
+    container_name: bunny_mysql
+    ports:
+      - '3306:3306'
+    environment:
+      - MYSQL_ROOT_PASSWORD=
+  nginx:
+    image: 'bunny-nginx:latest'
+    container_name: bunny_nginx
+    ports:
+      - '80:80'
+    depends_on:
+      - web
+
+networks:
+  default:
+    driver: bridge
