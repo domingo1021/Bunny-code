@@ -43,7 +43,7 @@ services:
     ports:
       - '3306:3306'
     environment:
-      - MYSQL_ROOT_PASSWORD=
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
   nginx:
     image: 'bunny-nginx:latest'
     container_name: bunny_nginx
@@ -52,8 +52,8 @@ services:
     depends_on:
       - web
     volumes:
-      - ${pwd}/nginx/certificate_final.crt:/etc/ssl/certificate_final.crt;
-      - ${pwd}/nginx/private.key:/etc/ssl/private.key
+      - ${pwd}/nginx/certificate_final.crt:${CERTIFICATE_KEY}
+      - ${pwd}/nginx/private.key:${PRIVATE_KEY}
 
 networks:
   default:
