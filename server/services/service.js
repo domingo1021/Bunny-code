@@ -79,7 +79,7 @@ async function runCommand(containerName, cmd) {
 
 async function compile(userID, fileName, codes) {
   const tmpTime = Date.now();
-  const userCodeRoute = `./docker_tool/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`;
+  const userCodeRoute = `./Docker/sandbox/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`;
   fs.writeFileSync(userCodeRoute, codes);
   let compilerResult;
   try {
@@ -87,7 +87,7 @@ async function compile(userID, fileName, codes) {
       `${userID}_${tmpTime}`,
       `docker run \
       --cpus="0.2" \
-      -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes \
+      -v \$\(pwd\)/Docker/sandbox/user_tmp_codes:/bunny_code/user_tmp_codes \
       --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
     );
   } catch (error) {
@@ -124,7 +124,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
   const tmpTime = Date.now();
   const containerName = `${battlerNumber}_${userID}_${tmpTime}`;
   const tmpFileName = `battle_tmp_codes/${battlerNumber}_${userID}_${tmpTime}.js`;
-  const battleCodeRoute = `./docker_tool/${tmpFileName}`;
+  const battleCodeRoute = `./Docker/sandbox/${tmpFileName}`;
   fs.writeFileSync(battleCodeRoute, processedCodes);
   let compilerResults;
   let resultStatus;
@@ -135,7 +135,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
           containerName,
           `docker run \
           --cpus="0.2" \
-          -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} \
+          -v \$\(pwd\)/Docker/sandbox/${tmpFileName}:/bunny_code/${tmpFileName} \
           -e TWO_SUM_FILE=./${tmpFileName} \
           --name ${containerName} \
           --rm sandbox \
@@ -155,7 +155,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
           containerName,
           `docker run \
           --cpus="0.2" \
-          -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} \
+          -v \$\(pwd\)/Docker/sandbox/${tmpFileName}:/bunny_code/${tmpFileName} \
           -e HELLO_FILE=./${tmpFileName} \
           --name ${containerName} \
           --rm sandbox \
@@ -175,7 +175,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
           containerName,
           `docker run \
           --cpus="0.2" \
-          -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} \
+          -v \$\(pwd\)/Docker/sandbox/${tmpFileName}:/bunny_code/${tmpFileName} \
           -e LCS_FILE=./${tmpFileName} \
           --name ${containerName} \
           --rm sandbox \
