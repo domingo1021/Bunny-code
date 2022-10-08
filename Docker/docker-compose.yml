@@ -7,15 +7,28 @@ services:
     ports:
       - '3000:3000'
     environment:
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USERNAME=
-      - DB_PASSWORD=
-      - DB_DATABASE=
-      - CACHE_HOST=redis
-      - CACHE_PORT=6379
-      - CACHE_USER=
-      - CACHE_PASSWORD=
+      - SERVER_PORT=3000
+      - API_VERSION=${API_VERSION}
+      - INFLUX_URL=${INFLUX_URL}
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_ORG=${INFLUX_ORG}
+      - INFLUX_BUCKET=${INFLUX_BUCKET}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - CACHE_HOST=${CACHE_HOST}
+      - CACHE_PORT=${CACHE_PORT}
+      - CACHE_USER=${CACHE_USER}
+      - CACHE_PASSWORD=${CACHE_PASSWORD}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - S3_RECORD_FOLDER=${S3_RECORD_FOLDER}
+      - S3_USER_IMAGE_FOLDER=${S3_USER_IMAGE_FOLDER}
+      - S3_BATTLE_FOLDER=${S3_BATTLE_FOLDER}
+      - AWS_DISTRIBUTION_NAME=${AWS_DISTRIBUTION_NAME}
+      - DEFAULT_TEMPLATE_FILE=${DEFAULT_TEMPLATE_FILE}
     depends_on:
       - mysql
       - redis
@@ -38,6 +51,9 @@ services:
       - '80:80'
     depends_on:
       - web
+    volumes:
+      - ${pwd}/nginx/certificate_final.crt:/etc/ssl/certificate_final.crt;
+      - ${pwd}/nginx/private.key:/etc/ssl/private.key
 
 networks:
   default:
