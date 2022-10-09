@@ -10,6 +10,8 @@ node_modules
 # docker nginx config 
 ./Docker/ReverseProxy/nginx.conf
 ./Docker/ReverseProxy/sites-enabled/bunny.conf
+./Docker/ReverseProxy/certificate_final.crt
+./Docker/ReverseProxy/private.key
 
 # for test purpose.
 user_tmp_codes
