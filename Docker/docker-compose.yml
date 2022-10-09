@@ -13,12 +13,12 @@ services:
       - INFLUX_TOKEN=${INFLUX_TOKEN}
       - INFLUX_ORG=${INFLUX_ORG}
       - INFLUX_BUCKET=${INFLUX_BUCKET}
-      - DB_HOST=bunny-db-2
+      - DB_HOST=bunny-db
       - DB_PORT=3306
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      - CACHE_HOST=bunny-cache-2
+      - CACHE_HOST=bunny-cache
       - CACHE_PORT=6379
       - CACHE_USER=${CACHE_USER}
       - CACHE_PASSWORD=${CACHE_PASSWORD}
