@@ -73,9 +73,9 @@ async function runCommand(containerName, cmd) {
       );
     }
     clearTimeout(timeout);
-    const errMessage = error.stderr.split('\n').reduce((prev, curr) => {
-      if (prev.includes('at') || prev.includes('bunny_code')) return prev;
-      return `${prev}\n${curr}`;
+    const errMessage = error.stderr.split('\n').reduce((prev, curr) => { console.log(curr)
+      if (curr.includes('at') || curr.includes('bunny_code/') || curr==="") return prev;
+      return `${prev}${curr}\n`;
     }, '');
     throw new APIException(errMessage, `User run code stderr error: ${errMessage}`, 400, currentFunctionName);
   }
