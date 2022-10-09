@@ -2,8 +2,8 @@ version: '1.0'
 
 services:
   web:
-    image: 'bunny-web:latest'
-    container_name: bunny_web
+    image: 'bunny-api:production'
+    container_name: bunny-api
     ports:
       - '3000:3000'
     environment:
@@ -13,13 +13,13 @@ services:
       - INFLUX_TOKEN=${INFLUX_TOKEN}
       - INFLUX_ORG=${INFLUX_ORG}
       - INFLUX_BUCKET=${INFLUX_BUCKET}
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
+      - DB_HOST=bunny-db-2
+      - DB_PORT=3306
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      - CACHE_HOST=${CACHE_HOST}
-      - CACHE_PORT=${CACHE_PORT}
+      - CACHE_HOST=bunny-cache-2
+      - CACHE_PORT=6379
       - CACHE_USER=${CACHE_USER}
       - CACHE_PASSWORD=${CACHE_PASSWORD}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
@@ -33,28 +33,29 @@ services:
       - mysql
       - redis
   redis:
-    image: 'bunny-redis:latest'
-    container_name: bunny_redis
+    image: 'bunny-cache:production'
+    container_name: bunny-cache-2
     ports:
       - '6379:6379'
   mysql:
-    image: 'bunny-mysql:latest'
-    container_name: bunny_mysql
+    image: 'bunny-db:production'
+    container_name: bunny-db-2
     ports:
       - '3306:3306'
     environment:
       - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
   nginx:
-    image: 'bunny-nginx:latest'
-    container_name: bunny_nginx
+    image: 'bunny-nginx:production'
+    container_name: bunny-nginx
     ports:
       - '80:80'
+      - '443:443'
     depends_on:
       - web
     volumes:
-      - ${pwd}/nginx/certificate_final.crt:${CERTIFICATE_KEY}
-      - ${pwd}/nginx/private.key:${PRIVATE_KEY}
-
+      - ./ReverseProxy/certificate_final.crt:${CERTIFICATE_KEY}
+      - ./ReverseProxy/private.key:${PRIVATE_KEY}
+      - /app:/app
 networks:
   default:
     driver: bridge
