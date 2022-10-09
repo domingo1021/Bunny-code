@@ -66,14 +66,18 @@ async function runCommand(containerName, cmd) {
   } catch (error) {
     if (error.stderr === '') {
       throw new APIException(
-        `Runtime error with error code [${error.code}]`,
+        'Script executes timeout',
         `Runtime error with error code [${error.code}], for code = ${cmd}`,
         400,
         currentFunctionName,
       );
     }
     clearTimeout(timeout);
-    throw new APIException(error.stderr, 'User run code stderr error', 400, currentFunctionName);
+    const errMessage = error.stderr.split('\n').reduce((prev, curr) => {
+      if (prev.includes('at') || prev.includes('bunny_code')) return prev;
+      return `${prev}\n${curr}`;
+    }, '');
+    throw new APIException(errMessage, `User run code stderr error: ${errMessage}`, 400, currentFunctionName);
   }
 }
 
