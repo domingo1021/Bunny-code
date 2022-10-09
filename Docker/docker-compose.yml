@@ -34,12 +34,12 @@ services:
       - redis
   redis:
     image: 'bunny-cache:production'
-    container_name: bunny-cache-2
+    container_name: bunny-cache
     ports:
       - '6379:6379'
   mysql:
     image: 'bunny-db:production'
-    container_name: bunny-db-2
+    container_name: bunny-db
     ports:
       - '3306:3306'
     environment:
