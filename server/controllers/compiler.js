@@ -6,7 +6,6 @@ const timeDB = require('../../utils/timeSeriesDB');
 const { compile } = require('../services/service');
 
 const { INFLUX_ORG, INFLUX_BUCKET } = process.env;
-const KEY_MANAGE = ['up', 'down'];
 
 const writeBattleFile = async (req, res) => {
   const { battleID } = req.body;
@@ -18,14 +17,6 @@ const writeBattleFile = async (req, res) => {
     return res.status(500).json({ msg: 'Write battle into database error, please upload again' });
   }
   return res.status(200).send({ data: 'File uploaded !' });
-};
-
-const getFiles = async (req, res) => {
-  const { versionID } = req.body;
-  const files = await Compiler.getFiles(versionID);
-  return res.status(200).json({
-    data: files,
-  });
 };
 
 const writeFile = async (req, res) => {
@@ -48,10 +39,7 @@ const writeFile = async (req, res) => {
 };
 
 const writeRecord = async (req, res) => {
-  // check timestamp and datetime transformation. --> checked 是一樣的
-  // console.log(data.timestamp, new Date(+data.timestamp.substring(0, 13)));
-  // TODO: insert into S3 storage with file snapshot.
-  // TODO: insert into mysql database with specific datetime （start & end).
+  // write record and save into Influx DB
   const {
     projectID, baseURL, versionID, fileID,
   } = req.body;
@@ -69,9 +57,6 @@ const writeRecord = async (req, res) => {
 
   const writeApi = timeDB.getWriteApi(INFLUX_ORG, INFLUX_BUCKET, 'ns');
   const points = batchData.map((data) => {
-    // if (KEY_MANAGE.includes(data.action)) {
-    //   return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line} code="" ${data.timestamp}`;
-    // }
     if (data.code === '"') {
       return `${projectID},version=${versionID},file=${fileID},action=${data.action},line=${data.line},index=${data.index} code=""""  ${data.timestamp}`;
     } if (data.code === '""') {
@@ -94,23 +79,14 @@ const writeRecord = async (req, res) => {
   } catch (error) {
     return res.status(500).json({ msg: 'Time series record failed' });
   }
-  // retrun coressponding datetime (start and end), frontend 會直接 Flush 之前的記錄，MySQL 之前的 record 紀錄也都放成 deleted.
-  // TODO: write data into influx db
-  // TODO: choose: batch or separately
-  // TODO: send to MySQL db (start time, end time)
-  // Note: 使用者每按一次 save 都是在一個新的 MySQL record
 };
 
 const queryRecord = async (req, res) => {
-  // TODO: get time from MySQL DB.
   const { projectID } = req.params;
   const {
     versionID, startTime, stopTime,
   } = req.body;
-  // const userID = 1;
-  // const projectID = 1;
-  // const startTime = '2022-09-01T04:25:32.985Z';
-  // const stopTime = '2022-10-30T04:25:32.47Z';
+
   // Flux query
   const queryApi = timeDB.getQueryApi(INFLUX_ORG);
   console.log(projectID, versionID, startTime, stopTime);
@@ -153,7 +129,7 @@ const queryRecord = async (req, res) => {
     });
   }).catch((error) => {
     console.log(error);
-    return res.status(500).send('erorr occur');
+    return res.status(500).json({ msg: 'Loading records failed.' });
   });
   return res.status(200).json({ data: queryResponse });
 };
@@ -166,5 +142,5 @@ const runCompiler = async (req, res) => {
 };
 
 module.exports = {
-  runCompiler, getFiles, writeFile, writeRecord, queryRecord, writeBattleFile,
+  runCompiler, writeFile, writeRecord, queryRecord, writeBattleFile,
 };

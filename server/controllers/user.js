@@ -1,44 +1,33 @@
 const bcrypt = require('bcrypt');
-const validator = require('express-validator');
 const { createJWTtoken, jwtAuthenticate } = require('../services/auth');
 const User = require('../models/user');
 
 const userSignIn = async (req, res) => {
-  const errors = validator.validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   const { email, password } = req.body;
-  let userInfo;
-  try {
-    userInfo = await User.signIn({ email });
-  } catch (error) {
-    return res.status(401).json({ msg: 'Email not enrolled.' });
+
+  // Get user detail info and check eamil enrolled.
+  const userInfo = await User.signIn(email);
+  if (!userInfo) {
+    return res.status(403).json({ msg: 'Authentication failed.' });
   }
 
-  if (userInfo.Picture == null) {
-    userInfo.Picture = undefined;
-  }
-
-  // pass bytes password into String
+  // pass bytes password into String, and campare with password input.
   const truePassword = new Buffer.from(userInfo.password).toString();
-
-  // compare user password with the one in database with bcrypt.
   const comparison = await bcrypt.compare(password, truePassword);
-  userInfo.Password = undefined;
+
   if (!comparison) {
     return res.status(403).json({ msg: 'Authentication failed' });
   }
+
   // Verified, Send JWT.
   const payload = {
     id: userInfo.user_id,
     name: userInfo.user_name,
     email,
-    picture: userInfo.picture,
   };
   const exp = 360000;
   const jwtToken = await createJWTtoken(payload, exp);
+
   return res.status(200).json({
     data: {
       access_token: jwtToken,
@@ -52,36 +41,25 @@ const userSignIn = async (req, res) => {
 };
 
 const userSignUp = async (req, res) => {
-  const errors = validator.validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   const { email, password, name } = req.body;
 
   const user = {
-    user_name: name,
+    name,
     email,
   };
 
+  // hash password.
   const saltRounds = 5;
-
   user.password = await bcrypt.hash(password, saltRounds);
-  let userID;
-  try {
-    userID = await User.signUp(user);
-  } catch (error) {
-    if (error.sqlMessage.includes('Duplicate')) {
-      return res.status(400).json({ msg: 'User name or email already exists' });
-    }
-  }
+
+  // sign up.
+  const userID = await User.signUp(user);
 
   // JWT token
   const payload = {
     id: userID,
-    name: user.user_name,
+    name: user.name,
     email: user.email,
-    provider: 'native',
   };
   const exp = 360000; // 3600 ms
   const jwtToken = await createJWTtoken(payload, exp);
@@ -115,11 +93,15 @@ const getUserProjects = async (req, res) => {
   if (paging < 0) {
     return res.status(400).json({ msg: 'Invalid query string. ' });
   }
+
   let projects;
   try {
-    if (userID === userPayload.id) {
+    // if project user himself, then get all projects; else then only return public.
+    if (+userID === userPayload.id) {
+      console.log(`User(id=${userPayload.id}) is getting all project`);
       projects = await User.getUserProjects(userID, 'all', keyword, paging);
     } else {
+      console.log(`User(id=${userPayload.id}) is visiting user(id=${userID}) projects`);
       projects = await User.getUserProjects(userID, 'public', keyword, paging);
     }
   } catch (error) {
@@ -130,11 +112,6 @@ const getUserProjects = async (req, res) => {
 };
 
 const createUserProject = async (req, res) => {
-  const errors = validator.validationResult(req);
-  if (!errors.isEmpty()) {
-    const errorMessage = errors.array()[0].msg;
-    return res.status(400).json({ msg: errorMessage });
-  }
   const { userID } = req.params;
   const {
     projectName, projectDescription, isPublic, versionName, fileName,
@@ -142,15 +119,21 @@ const createUserProject = async (req, res) => {
   if (isPublic === undefined || !projectName || !projectDescription || !versionName || !fileName) {
     return res.status(400).json({ msg: 'Lack of data.' });
   }
-  if (projectName.length >= 30 || projectDescription.length >= 50) {
-    return res.status(400).json({ msg: 'project name or description is too long.' });
-  }
-  const insertResponse = await User.createUserProject(projectName, projectDescription, +isPublic, +userID, versionName, fileName);
-  if (insertResponse.msg) {
-    return res.status(400).json({
-      ...insertResponse,
-    });
-  }
+
+  // create project for user in mysql DB
+  const insertResponse = await User.createUserProject(
+    {
+      projectName,
+      projectDescription,
+      isPublic: +isPublic,
+    },
+    +userID,
+    versionName,
+    fileName,
+  );
+
+  // create project success.
+  console.log(`User ${req.user.id} create a project (project_id=${insertResponse.projectID}) success`);
   return res.status(201).json({
     data: {
       ...insertResponse,
@@ -166,28 +149,23 @@ const authResponse = (req, res) => res.status(200).json({
 
 const userIDResponse = (req, res) => res.status(200).json({ data: req.user.id });
 
-const getUserByName = async (req, res) => {
-  const { userName } = req.query;
-  if (!userName) {
-    return res.status(400).json({ msg: 'Lake of data.' });
-  }
-  const searchResponse = await User.getUserByName(userName);
-  return res.status(200).json({
-    data: searchResponse,
-  });
-};
-
 const getUserDetail = async (req, res) => {
   const { userID } = req.params;
+
   if (!+userID) {
     return res.status(400).json({
       msg: 'Invalid user id',
     });
   }
   const userDetail = await User.getUserDetailByID(userID);
+
+  // check if user exists.
   if (!userDetail) {
     return res.status(404).json({ msg: 'User not found.' });
   }
+
+  // set user password undefined.
+  userDetail.password = undefined;
   userDetail.picture = process.env.AWS_DISTRIBUTION_NAME + userDetail.picture;
   return res.status(200).json({
     data: userDetail,
@@ -201,6 +179,5 @@ module.exports = {
   createUserProject,
   authResponse,
   userIDResponse,
-  getUserByName,
   getUserDetail,
 };

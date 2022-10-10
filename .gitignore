@@ -4,13 +4,22 @@ node_modules
 
 .env
 
+# docker redis config
+Docker/Cache/redis.conf
+
+# docker nginx config 
+Docker/ReverseProxy/nginx.conf
+Docker/ReverseProxy/sites-enabled/bunny.conf
+Docker/ReverseProxy/certificate_final.crt
+Docker/ReverseProxy/private.key
+
 # for test purpose.
-user_tmp_codes
-save.json
 test.js
 question
 
-./docker_tool/user_tmp_codes
-./docker_tool/battle_tmp_codes
+Docker/sandbox/user_tmp_codes/*
+!Docker/sandbox/user_tmp_codes/.gitkeep
+Docker/sandbox/battle_tmp_codes/*
+!Docker/sandbox/battle_tmp_codes/.gitkeep
 
 ./backup

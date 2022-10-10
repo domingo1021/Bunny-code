@@ -1,14 +1,8 @@
 const multer = require('multer');
 const util = require('util');
-// const { exec } = require('child_process');
-const exec = util.promisify(require('child_process').exec);
 const fs = require('fs');
-
-class ServiceException {
-  constructor(msg) {
-    this.msg = msg;
-  }
-}
+const exec = util.promisify(require('child_process').exec);
+const { APIException } = require('./exceptions/api_exception');
 
 const fileUploader = multer({
   storage: multer.memoryStorage(),
@@ -16,27 +10,52 @@ const fileUploader = multer({
     console.log('mimetype: ', file.mimetype);
     const fileSize = parseInt(req.headers['content-length']);
     if (file.mimetype !== 'application/javascript') {
-      cb(new ServiceException('Only javascript file is accepted'));
+      cb(new APIException(
+        'Only javascript file is accepted',
+        `Unexpected mimetype = ${file.mimetype} trying to upload.`,
+        400,
+        'multer',
+      ));
     } else if (fileSize >= 1024 * 1024 * 3) {
-      cb(new ServiceException('File too large.'));
+      cb(new APIException(
+        'File too large.',
+        `Unexpected file size = ${fileSize} too large.`,
+        400,
+        'multer',
+      ));
     } else {
       cb(null, true);
     }
   },
 }).array('files', 5);
 
+// wrap async function with try.. ctach..
 function wrapAsync(fn) {
   return (req, res, next) => {
     fn(req, res, next).catch(next);
   };
 }
 
+// send console log into event queue
+// do the console.log only when call stack is clean.
+function setLog(msg) {
+  setTimeout(() => {
+    console.log(msg);
+  }, 0);
+}
+
 async function runCommand(containerName, cmd) {
   // Set if runtime exists.
+  const currentFunctionName = 'runCommand';
   const threshold = 10000;
   const timeout = setTimeout(async () => {
     await exec(`docker kill ${containerName}`);
-    throw new ServiceException('Script executes timeout, runtime exceeds 10 seconds.');
+    throw new APIException(
+      'Script executes timeout, runtime exceeds 10 seconds.',
+      `User code ${cmd} is terminated due to timeout.`,
+      400,
+      currentFunctionName,
+    );
   }, threshold);
 
   // Execute users codes with child process.
@@ -46,16 +65,25 @@ async function runCommand(containerName, cmd) {
     return stdout;
   } catch (error) {
     if (error.stderr === '') {
-      throw new ServiceException(`Runtime error with error code [${error.code}]`);
+      throw new APIException(
+        'Script executes timeout',
+        `Runtime error with error code [${error.code}], for code = ${cmd}`,
+        400,
+        currentFunctionName,
+      );
     }
     clearTimeout(timeout);
-    throw new ServiceException(error.stderr);
+    const errMessage = error.stderr.split('\n').reduce((prev, curr) => {
+      if (curr.includes('at') || curr.includes('bunny_code/') || curr === '') return prev;
+      return `${prev}${curr}\n`;
+    }, '');
+    throw new APIException(errMessage, `User run code stderr error: ${errMessage}`, 400, currentFunctionName);
   }
 }
 
 async function compile(userID, fileName, codes) {
   const tmpTime = Date.now();
-  const userCodeRoute = `./docker_tool/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`;
+  const userCodeRoute = `./Docker/sandbox/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`;
   fs.writeFileSync(userCodeRoute, codes);
   let compilerResult;
   try {
@@ -63,11 +91,12 @@ async function compile(userID, fileName, codes) {
       `${userID}_${tmpTime}`,
       `docker run \
       --cpus="0.2" \
-      -v \$\(pwd\)/docker_tool/user_tmp_codes:/bunny_code/user_tmp_codes \
+      -v \$\(pwd\)/Docker/sandbox/user_tmp_codes:/bunny_code/user_tmp_codes \
       --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
     );
   } catch (error) {
-    compilerResult = error.msg;
+    console.log(error.fullLog);
+    compilerResult = error.message;
   }
   fs.rmSync(userCodeRoute);
   return compilerResult;
@@ -99,7 +128,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
   const tmpTime = Date.now();
   const containerName = `${battlerNumber}_${userID}_${tmpTime}`;
   const tmpFileName = `battle_tmp_codes/${battlerNumber}_${userID}_${tmpTime}.js`;
-  const battleCodeRoute = `./docker_tool/${tmpFileName}`;
+  const battleCodeRoute = `./Docker/sandbox/${tmpFileName}`;
   fs.writeFileSync(battleCodeRoute, processedCodes);
   let compilerResults;
   let resultStatus;
@@ -110,7 +139,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
           containerName,
           `docker run \
           --cpus="0.2" \
-          -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} \
+          -v \$\(pwd\)/Docker/sandbox/${tmpFileName}:/bunny_code/${tmpFileName} \
           -e TWO_SUM_FILE=./${tmpFileName} \
           --name ${containerName} \
           --rm sandbox \
@@ -118,7 +147,8 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
         );
         resultStatus = 'success';
       } catch (error) {
-        compilerResults = error.msg;
+        console.log(error.fullLog);
+        compilerResults = error.message;
         resultStatus = 'failed';
       }
       break;
@@ -129,7 +159,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
           containerName,
           `docker run \
           --cpus="0.2" \
-          -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} \
+          -v \$\(pwd\)/Docker/sandbox/${tmpFileName}:/bunny_code/${tmpFileName} \
           -e HELLO_FILE=./${tmpFileName} \
           --name ${containerName} \
           --rm sandbox \
@@ -137,7 +167,8 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
         );
         resultStatus = 'success';
       } catch (error) {
-        compilerResults = error.msg;
+        console.log(error.fullLog);
+        compilerResults = error.message;
         resultStatus = 'failed';
       }
       break;
@@ -148,7 +179,7 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
           containerName,
           `docker run \
           --cpus="0.2" \
-          -v \$\(pwd\)/docker_tool/${tmpFileName}:/bunny_code/${tmpFileName} \
+          -v \$\(pwd\)/Docker/sandbox/${tmpFileName}:/bunny_code/${tmpFileName} \
           -e LCS_FILE=./${tmpFileName} \
           --name ${containerName} \
           --rm sandbox \
@@ -156,7 +187,8 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
         );
         resultStatus = 'success';
       } catch (error) {
-        compilerResults = error.msg;
+        console.log(error.fullLog);
+        compilerResults = error.message;
         resultStatus = 'failed';
       }
       break;
@@ -169,5 +201,5 @@ async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
 }
 
 module.exports = {
-  wrapAsync, fileUploader, ServiceException, runCommand, compile, leetCodeCompile,
+  wrapAsync, fileUploader, runCommand, compile, leetCodeCompile,
 };
