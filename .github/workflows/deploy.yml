@@ -25,7 +25,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i private_key ${{ AWS_USER_NAME }}@${{ AWS_HOST_NAME }} '
   deploy-ec2:
     runs-on: ubuntu-22.04
-    needs: continuous-integration
+    needs: connect-ec2
     steps:
       - name: Extract branch name
         shell: bash
