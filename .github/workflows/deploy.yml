@@ -27,7 +27,7 @@ jobs:
           echo "${AWS_PRIVATE_KEY}"
           ssh -o StrictHostKeyChecking=no -i private_key ${AWS_USER_NAME}@${AWS_HOST_NAME}'
           cd ${TARGET_DIR} &&
-          pwd &&
+          echo $(pwd) &&
           git checkout ${{ steps.extract_branch.outputs.branch }} &&
           git pull origin ${{ steps.extract_branch.outputs.branch }} &&
           npm install
