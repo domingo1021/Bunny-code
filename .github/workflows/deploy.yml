@@ -13,7 +13,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
         env:
           AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY }}
           AWS_HOST_NAME: ${{ secrets.AWS_HOST_NAME  }}
