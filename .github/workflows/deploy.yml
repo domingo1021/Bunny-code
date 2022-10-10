@@ -29,6 +29,6 @@ jobs:
             echo $(pwd) &&
             git checkout ${{ steps.extract_branch.outputs.branch }} &&
             git pull origin ${{ steps.extract_branch.outputs.branch }} &&
-            npm install
+            npm install &&
             pm2 restart socket
           '
