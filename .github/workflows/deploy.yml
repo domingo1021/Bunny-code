@@ -16,6 +16,9 @@ jobs:
         shell: bash
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
       - name: SSH to ec2 host
         env:
           AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY }}
@@ -24,7 +27,7 @@ jobs:
           TARGET_DIR: ${{ secrets.TARGET_DIR }}
         run: |
           echo  "$AWS_PRIVATE_KEY" > private_key && chmod 600 private_key
-            ssh -o StrictHostKeyChecking=no -i private_key ${AWS_USER_NAME}@${AWS_HOST_NAME} '
+          ssh -o StrictHostKeyChecking=no -i private_key ${AWS_USER_NAME}@${AWS_HOST_NAME} '
             cd ~/Bunny-code &&
             echo $(pwd) &&
             git checkout ${{ steps.extract_branch.outputs.branch }} &&
