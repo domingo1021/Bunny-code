@@ -32,11 +32,9 @@ jobs:
         id: extract_branch
       - name: git pull
         run: |
-          '
           cd ${TARGET_DIR} &&
           pwd &&
           git checkout ${{ steps.extract_branch.outputs.branch }} &&
           git pull origin ${{ steps.extract_branch.outputs.branch }} &&
           npm install
           pm2 restart socket
-          '
