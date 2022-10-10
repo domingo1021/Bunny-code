@@ -33,6 +33,8 @@ jobs:
             echo $(pwd) &&
             git checkout ${{ steps.extract_branch.outputs.branch }} &&
             git pull origin ${{ steps.extract_branch.outputs.branch }} &&
+            export NVM_DIR=~/.nvm &&
+            source ~/.nvm/nvm.sh &&
             npm install &&
             pm2 restart socket
           '
