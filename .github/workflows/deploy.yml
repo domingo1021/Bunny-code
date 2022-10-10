@@ -16,8 +16,8 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         env:
           AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY  }}
-          AWS_HOST_NAME: ${{ secrets.HOST_NAME  }}
-          AWS_USER_NAME: ${{ secrets.USER_NAME  }}
+          AWS_HOST_NAME: ${{ secrets.AWS_HOST_NAME  }}
+          AWS_USER_NAME: ${{ secrets.AWS_USER_NAME  }}
           TARGET_DIR: ${{ secrets.TARGET_DIR }}
       - name: SSH to ec2 host
         run: |
