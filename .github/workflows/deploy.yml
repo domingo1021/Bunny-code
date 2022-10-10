@@ -24,11 +24,11 @@ jobs:
           TARGET_DIR: ${{ secrets.TARGET_DIR }}
         run: |
           echo  "$AWS_PRIVATE_KEY" > private_key && chmod 600 private_key
-          ssh -o StrictHostKeyChecking=no -i private_key ${AWS_USER_NAME}@${AWS_HOST_NAME}'
-          cd ~/Bunny-code &&
-          echo $(pwd) &&
-          git checkout ${{ steps.extract_branch.outputs.branch }} &&
-          git pull origin ${{ steps.extract_branch.outputs.branch }} &&
-          npm install
-          pm2 restart socket
+            ssh -o StrictHostKeyChecking=no -i private_key ${AWS_USER_NAME}@${AWS_HOST_NAME} '
+            cd ~/Bunny-code &&
+            echo $(pwd) &&
+            git checkout ${{ steps.extract_branch.outputs.branch }} &&
+            git pull origin ${{ steps.extract_branch.outputs.branch }} &&
+            npm install
+            pm2 restart socket
           '
