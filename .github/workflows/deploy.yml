@@ -19,9 +19,9 @@ jobs:
           AWS_USER_NAME: ${{ secrets.AWS_USER_NAME  }}
           TARGET_DIR: ${{ secrets.TARGET_DIR }}
         run: |
-          echo ${{ AWS_PRIVATE_KEY }} > private_key && chmod 600 private_key
-          echo ${{ TARGET_DIR }}
-          ssh -o StrictHostKeyChecking=no -i private_key ${{ AWS_USER_NAME }}@${{ AWS_HOST_NAME }} '
+          echo  "$AWS_PRIVATE_KEY" > private_key && chmod 600 private_key
+          echo "$TARGET_DIR"
+          ssh -o StrictHostKeyChecking=no -i private_key ${AWS_USER_NAME}@${AWS_HOST_NAME}'
   deploy-ec2:
     runs-on: ubuntu-22.04
     needs: connect-ec2
@@ -32,7 +32,7 @@ jobs:
         id: extract_branch
       - name: git pull
         run: |
-          cd ${{ TARGET_DIR }} &&
+          cd ${TARGET_DIR} &&
           pwd &&
           git checkout ${{ steps.extract_branch.outputs.branch }} &&
           git pull origin ${{ steps.extract_branch.outputs.branch }} &&
