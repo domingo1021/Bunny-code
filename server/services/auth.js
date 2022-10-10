@@ -26,7 +26,7 @@ const jwtAuthenticate = async (token) => {
     jwt.verify(jwtToken, process.env.JWT_SECRET_KEY, (err, auth) => {
       if (err) {
         // If for more specific: if want to track user lifecycle, keep user id to further funciotn.
-        return reject(new APIException('Please Login', `403, JWT token ${token} authentication failed`, 403, currentFunctionName));
+        return reject(new APIException('Authentication failed', `401, JWT token ${token} authentication failed`, 401, currentFunctionName));
       }
       return resolve(auth);
     });
@@ -50,7 +50,7 @@ const CLIENT_CATEGORY = {
 const authorization = async (req, res, next) => {
   const { userID } = req.params;
   if (userID === undefined) {
-    return res.status(400).json({ error: 'Pleas provide a user id.' });
+    return res.status(400).json({ msg: 'Pleas provide a user id.' });
   }
   let accessToken = req.get('Authorization');
   if (!accessToken) {
@@ -88,13 +88,13 @@ function blockNotSelf(blockCategories) {
       blockCategories.includes(CLIENT_CATEGORY.visitor)
       && req.clientCategory === CLIENT_CATEGORY.visitor
     ) {
-      return res.status(401).send({ error: 'Unauthorized' });
+      return res.status(403).send({ msg: 'Unauthorized' });
     }
     if (
       blockCategories.includes(CLIENT_CATEGORY.otherMember)
       && req.clientCategory === CLIENT_CATEGORY.otherMember
     ) {
-      return res.status(403).send({ error: 'Forbidden' });
+      return res.status(403).send({ msg: 'Forbidden' });
     }
     return next();
   };
@@ -102,7 +102,7 @@ function blockNotSelf(blockCategories) {
 
 const blockSelf = (req, res, next) => {
   if (req.clientCategory === CLIENT_CATEGORY.self) {
-    return res.status(403).json({ error: 'Forbidden' });
+    return res.status(403).json({ msg: 'Forbidden' });
   }
   return next();
 };
