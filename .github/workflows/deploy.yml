@@ -15,8 +15,8 @@ jobs:
       - name: SSH to ec2 host
         env:
           AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY }}
-          AWS_HOST_NAME: ${{ secrets.AWS_HOST_NAME  }}
-          AWS_USER_NAME: ${{ secrets.AWS_USER_NAME  }}
+          AWS_HOST_NAME: ${{ secrets.AWS_HOST_NAME }}
+          AWS_USER_NAME: ${{ secrets.AWS_USER_NAME }}
           TARGET_DIR: ${{ secrets.TARGET_DIR }}
         run: |
           echo  "$AWS_PRIVATE_KEY" > private_key && chmod 600 private_key
