@@ -1,0 +1,61 @@
+version: '1.0'
+
+services:
+  web:
+    image: 'bunny-api:production'
+    container_name: bunny-api
+    ports:
+      - '3000:3000'
+    environment:
+      - SERVER_PORT=3000
+      - API_VERSION=${API_VERSION}
+      - INFLUX_URL=${INFLUX_URL}
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_ORG=${INFLUX_ORG}
+      - INFLUX_BUCKET=${INFLUX_BUCKET}
+      - DB_HOST=bunny-db
+      - DB_PORT=3306
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - CACHE_HOST=bunny-cache
+      - CACHE_PORT=6379
+      - CACHE_USER=${CACHE_USER}
+      - CACHE_PASSWORD=${CACHE_PASSWORD}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - S3_RECORD_FOLDER=${S3_RECORD_FOLDER}
+      - S3_USER_IMAGE_FOLDER=${S3_USER_IMAGE_FOLDER}
+      - S3_BATTLE_FOLDER=${S3_BATTLE_FOLDER}
+      - AWS_DISTRIBUTION_NAME=${AWS_DISTRIBUTION_NAME}
+      - DEFAULT_TEMPLATE_FILE=${DEFAULT_TEMPLATE_FILE}
+    depends_on:
+      - mysql
+      - redis
+  redis:
+    image: 'bunny-cache:production'
+    container_name: bunny-cache
+    ports:
+      - '6379:6379'
+  mysql:
+    image: 'bunny-db:production'
+    container_name: bunny-db
+    ports:
+      - '3306:3306'
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+  nginx:
+    image: 'bunny-nginx:production'
+    container_name: bunny-nginx
+    ports:
+      - '80:80'
+      - '443:443'
+    depends_on:
+      - web
+    volumes:
+      - ./ReverseProxy/certificate_final.crt:${CERTIFICATE_KEY}
+      - ./ReverseProxy/private.key:${PRIVATE_KEY}
+      - /app:/app
+networks:
+  default:
+    driver: bridge

@@ -1,4 +1,4 @@
-FROM node:slim
+FROM node:18-slim
 
 WORKDIR /bunny_code
 

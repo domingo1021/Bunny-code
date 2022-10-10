@@ -27,12 +27,4 @@ const writeRecord = async (versionID, baseURL, startTime, endTime) => {
   return recordCreate.insertId;
 };
 
-const getFiles = async (versionID) => {
-  const sql = `
-  SELECT file_name as fileName, file_url as fileUrl, log FROM file WHERE version_id = ?;
-  `;
-  const [files] = await pool.execute(sql, [versionID]);
-  return files;
-};
-
-module.exports = { writeFile, writeRecord, getFiles };
+module.exports = { writeFile, writeRecord };

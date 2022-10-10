@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const { APIException } = require('./exceptions/api_exception');
 
 // Promise sign
 const createJWTtoken = (payload, exp) => new Promise((resolve, reject) => {
@@ -15,22 +16,17 @@ const createJWTtoken = (payload, exp) => new Promise((resolve, reject) => {
   );
 });
 
-class AuthenticationError {
-  constructor(status, msg) {
-    this.status = status;
-    this.msg = msg;
-  }
-}
-
 const jwtAuthenticate = async (token) => {
+  const currentFunctionName = 'jwtAuthenticate';
   const jwtToken = token && token.split(' ')[1];
   if (jwtToken === 'null' || !jwtToken) {
-    throw new AuthenticationError(401, 'Please provide token');
+    throw new APIException('Please Login', '401, User authentication failed with no token', 401, currentFunctionName);
   }
   const decoded = await new Promise((resolve, reject) => {
     jwt.verify(jwtToken, process.env.JWT_SECRET_KEY, (err, auth) => {
       if (err) {
-        return reject(new AuthenticationError(403, 'Forbidden'));
+        // If for more specific: if want to track user lifecycle, keep user id to further funciotn.
+        return reject(new APIException('Authentication failed', `401, JWT token ${token} authentication failed`, 401, currentFunctionName));
       }
       return resolve(auth);
     });
@@ -40,12 +36,7 @@ const jwtAuthenticate = async (token) => {
 
 const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization;
-  let user;
-  try {
-    user = await jwtAuthenticate(token);
-  } catch (error) {
-    return res.status(error.status).json({ msg: error.msg });
-  }
+  const user = await jwtAuthenticate(token);
   req.user = user;
   return next();
 };
@@ -59,7 +50,7 @@ const CLIENT_CATEGORY = {
 const authorization = async (req, res, next) => {
   const { userID } = req.params;
   if (userID === undefined) {
-    return res.status(400).json({ error: 'Pleas provide a user id.' });
+    return res.status(400).json({ msg: 'Pleas provide a user id.' });
   }
   let accessToken = req.get('Authorization');
   if (!accessToken) {
@@ -80,6 +71,7 @@ const authorization = async (req, res, next) => {
     req.clientCategory = CLIENT_CATEGORY.visitor;
     return next();
   }
+  console.log(`User id=${userDetail.user_id} call auth api, with params userID=${userID}`);
 
   req.user.id = userDetail.user_id;
   if (userDetail.user_id === +userID) {
@@ -92,18 +84,17 @@ const authorization = async (req, res, next) => {
 
 function blockNotSelf(blockCategories) {
   return (req, res, next) => {
-    console.log('User category: ', req.clientCategory);
     if (
       blockCategories.includes(CLIENT_CATEGORY.visitor)
       && req.clientCategory === CLIENT_CATEGORY.visitor
     ) {
-      return res.status(401).send({ error: 'Unauthorized' });
+      return res.status(403).send({ msg: 'Unauthorized' });
     }
     if (
       blockCategories.includes(CLIENT_CATEGORY.otherMember)
       && req.clientCategory === CLIENT_CATEGORY.otherMember
     ) {
-      return res.status(403).send({ error: 'Forbidden' });
+      return res.status(403).send({ msg: 'Forbidden' });
     }
     return next();
   };
@@ -111,11 +102,17 @@ function blockNotSelf(blockCategories) {
 
 const blockSelf = (req, res, next) => {
   if (req.clientCategory === CLIENT_CATEGORY.self) {
-    return res.status(403).json({ error: 'Forbidden' });
+    return res.status(403).json({ msg: 'Forbidden' });
   }
   return next();
 };
 
 module.exports = {
-  createJWTtoken, authMiddleware, AuthenticationError, jwtAuthenticate, authorization, blockNotSelf, blockSelf, CLIENT_CATEGORY,
+  createJWTtoken,
+  authMiddleware,
+  jwtAuthenticate,
+  authorization,
+  blockNotSelf,
+  blockSelf,
+  CLIENT_CATEGORY,
 };

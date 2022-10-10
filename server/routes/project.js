@@ -1,37 +1,31 @@
-const express = require('express');
+const router = require('express').Router();
 const { body } = require('express-validator');
-const {
-  getProjects, getProejctVersions, createProjectVersion, updateProject,
-} = require('../controllers/project');
-const {
-  authMiddleware, authorization, blockNotSelf, CLIENT_CATEGORY,
-} = require('../services/auth');
-const { validateNormalName } = require('../services/validation');
+const { getProjects, createProjectVersion, updateProject } = require('../controllers/project');
+const { authMiddleware } = require('../services/auth');
+const { validateFilter, validateNormalName } = require('../services/validation');
+const { wrapAsync } = require('../services/service');
 
-const router = express.Router();
+router.route('/project/:information').get(wrapAsync(getProjects)).put(wrapAsync(updateProject));
 
-// project category
-// proejct search
-// router.get('/project/:information', getProjects);
-router.route('/project/:information').get(getProjects).put(updateProject);
-
-router.get('/project/:projectID/version/:information');
-
-router.route('/project/:projectID/version').get(getProejctVersions).post(
-  authMiddleware,
+router.post(
+  '/project/:projectID/version',
+  wrapAsync(authMiddleware),
   [
     body('versionName').custom((versionName) => {
       if (!validateNormalName(versionName)) {
         throw new Error('Version name should only include number, alphabet, dot or _ .');
-      } return true;
+      }
+      return true;
     }),
     body('fileName').custom((fileName) => {
       if (!validateNormalName(fileName)) {
         throw new Error('File name should only include number, alphabet, dot or _ .');
-      } return true;
+      }
+      return true;
     }),
   ],
-  createProjectVersion,
+  validateFilter,
+  wrapAsync(createProjectVersion),
 );
 
 module.exports = router;

@@ -1,13 +1,10 @@
-const express = require('express');
+const router = require('express').Router();
 const { param } = require('express-validator');
-const { validateNormalName } = require('../services/validation');
+const { validateNormalName, validateFilter } = require('../services/validation');
 const { getBattles, ifBattleExists } = require('../controllers/battle');
-
-const router = express.Router();
 
 router.route('/battle').get(getBattles);
 
-// battle name validation
 router.get(
   '/battle/:battleName',
   [
@@ -17,6 +14,7 @@ router.get(
       } return true;
     }),
   ],
+  validateFilter,
   ifBattleExists,
 );
 
