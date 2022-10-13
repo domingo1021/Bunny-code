@@ -16,7 +16,7 @@ file_name=$1
 target_dir=$2
 container_name=$3
 cd ~/sandbox_jobs
-docker run --cpus="0.1" --memory=20m -v $(pwd)/${file_name}:/bunny_code/${target_dir}/${file_name} --name ${container_name} node-tool /bunny_code/${target_dir}/${file_name}
+docker run --cpus="0.2" --memory=20m -v $(pwd)/${file_name}:/bunny_code/${target_dir}/${file_name} --name ${container_name} node-tool /bunny_code/${target_dir}/${file_name}
 docker container inspect ${container_name} -f '{"OOM": {{json .State.OOMKilled}}}'
 docker rm ${container_name} >/dev/null 2>&1
 rm -f ~/sandbox_jobs/${file_name}
