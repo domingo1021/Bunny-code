@@ -118,6 +118,7 @@ const projectDetails = async (projectName) => {
   // get specific project with project name.
   const project = await getProjectByName(connection, projectName);
   if (!project) {
+    connection.release();
     throw new SQLException(
       'Project not found',
       `Cannot find project with project name = ${projectName}`,
@@ -137,8 +138,8 @@ const projectDetails = async (projectName) => {
   const records = await Promise.all(
     versions.map(async (version) => getVersionRecord(connection, version.versionID)),
   );
-  console.log('records: ', records);
 
+  connection.release();
   return [project, versions, files, records];
 };
 
