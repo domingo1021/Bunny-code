@@ -7,7 +7,9 @@
 - [Background and Why Bunny Code](#background-and-why-bunny-code)
 - [Links](#links)
 - [Demo](#demo)
-- [Features and Tech-stacks](#features-and-tech-stacks)
+- [Features - Workspace](#features---workspace)
+- [Features - Battle Valley](#features---battle-valley)
+- [Tech Stack](#tech-stack)
 - [System architechture](#system-architechture)
 - [Future Features](#future-features)
 
@@ -39,21 +41,37 @@ Bunny Code frontend separation project, developed with Vue.js frontend framework
 
 gif
 
-## Features and Tech stacks
+## Features - Workspace
 
-- Record and replaying user coding processes: `InfluxDB (time series database)`
-- Coding Version control mechanism: `MySQL schema design`
-- Coding sandbox, running codes in separate namespace with limited resources: `Docker`
-- Arrange Sandbox jobs to different server: `Prometheus exporter` `Shell script`
-- Cache and real-time synchronized coding battle: `Socket.IO` `Redis`
-- Host static files (including coding archives) in stateless way: `S3`
-- Speed up website static files services: `CloudFront (CDN)`
-- Frontend SPA: `Vue 3 Composition API`
-- Continuously develop & automatic CDN cache invalidation: `GitHub Actions`
-- Gather project logs to improve application mantainability: `CloudWatch`
+- `Record` and `replay` users' project in workspace
+- Provide `play`, `pause`, `speed up` and `slow down` to help user to replay coding processes as if watching video clips.
+- `Preview coding archives` of projects at the first time users go into the workspace.
+- Provide various `shortcut` to help developers edit project much faster.
+- Allow user `run codes` immediately after they edit codes or watch codes.
+- `Create version` from latest coding process and provide `version control`. Help user compare differences in version by replaying project's coding processes.
+
+## Features - Battle Valley
+
+- `Choose a question level`, `Launch a battle`, then user can compete with others in battle valley.
+- `Watch a live battle` in battle valley as long as user want.
+- `Run codes` to check the answer of the appointed question.
+- Compare `expected outputs` and `battler coding outputs` for test cases, help battlers to improve their codes.
+- `Share winner coding archives` of battles to help users learn from each other.
+
+## Tech stack
+
+- Backend: `Node.js` `Express` `Socket.IO`
+- Frontend: `HTML` `CSS` `Vue.js` `Bootstrap`
+- Database: `MySQL` `InfluxDB` `Redis`
+- Sandbox: `Shell`, `Docker`, `Prometheus exporter`
+- Cloud services: `S3` `CloudFront` `Cloudwatch`
+- Continuous development: `GitHub Actions`
 
 ## System architechture
 
 ![System architecture](./Archives//System_architecture.png)
 
 ## Future Features
+
+- More `shortcuts` in workspace. For example: `Redo`, `Undo`, and etc.
+- `Friend` and `follower` mechanism. Help users invite battles to a target person.
