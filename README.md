@@ -22,8 +22,13 @@ Bunny Code was borned to cope with the problem. Bunny Code is dedicated to help 
 **Bunny Code Homepage**: [Bunny Code](https://domingoos.store)
 
 ```
-Test Accound: domingo0204@gmail.com
-Test Password: test123456
+// first user
+Accound: domingo0204@gmail.com
+Password: test123456
+
+// second user
+Accound: guest@gmail.com
+Password: test1234
 ```
 
 **Frontend Github repo**: [Bunny-code-vue](https://github.com/domingo1021/Bunny-code-vue)
@@ -48,5 +53,7 @@ gif
 - Gather project logs to improve application matainability: `CloudWatch`
 
 ## System architechture
+
+![System architecture](./Archives//System_architecture.png)
 
 ## Future Features
