@@ -1,10 +1,21 @@
-const express = require('express');
-const { createBattle, getBattles, ifBattleExists } = require('../controllers/battle');
+const router = require('express').Router();
+const { param } = require('express-validator');
+const { validateNormalName, validateFilter } = require('../services/validation');
+const { getBattles, ifBattleExists } = require('../controllers/battle');
 
-const router = express.Router();
+router.route('/battle').get(getBattles);
 
-router.route('/battle').get(getBattles).post(createBattle);
-
-router.get('/battle/:battleName', ifBattleExists);
+router.get(
+  '/battle/:battleName',
+  [
+    param('battleName').custom((battleName) => {
+      if (!validateNormalName(battleName)) {
+        throw new Error('Battle name should only include number, alphabet, dot or _ .');
+      } return true;
+    }),
+  ],
+  validateFilter,
+  ifBattleExists,
+);
 
 module.exports = router;

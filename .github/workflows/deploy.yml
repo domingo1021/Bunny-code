@@ -1,0 +1,40 @@
+name: build and deploy
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  connect-ec2:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
+      - name: SSH to ec2 host
+        env:
+          AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY }}
+          AWS_HOST_NAME: ${{ secrets.AWS_HOST_NAME }}
+          AWS_USER_NAME: ${{ secrets.AWS_USER_NAME }}
+          TARGET_DIR: ${{ secrets.TARGET_DIR }}
+        run: |
+          echo  "$AWS_PRIVATE_KEY" > private_key && chmod 600 private_key
+          ssh -o StrictHostKeyChecking=no -i private_key ${AWS_USER_NAME}@${AWS_HOST_NAME} '
+            cd ~/Bunny-code &&
+            echo $(pwd) &&
+            git checkout ${{ steps.extract_branch.outputs.branch }} &&
+            git pull origin ${{ steps.extract_branch.outputs.branch }} &&
+            export NVM_DIR=~/.nvm &&
+            source ~/.nvm/nvm.sh &&
+            npm install &&
+            pm2 restart socket
+          '

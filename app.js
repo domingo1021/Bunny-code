@@ -1,10 +1,14 @@
 require('dotenv').config();
 const express = require('express');
+
+const {
+  TEST_PORT, SERVER_PORT, NODE_ENV, API_VERSION,
+} = process.env;
+const port = NODE_ENV === 'test' ? TEST_PORT : SERVER_PORT;
 const cors = require('cors');
 const Cache = require('./utils/cache');
-const { FileUploadException } = require('./server/services/service');
-
-const { SERVER_PORT, API_VERSION } = process.env;
+const { APIException } = require('./server/services/exceptions/api_exception');
+const { SQLException } = require('./server/services/exceptions/sql_exception');
 
 const app = express();
 
@@ -18,7 +22,6 @@ app.use(`/api/${API_VERSION}`, [
   require('./server/routes/user'),
   require('./server/routes/compiler'),
   require('./server/routes/project'),
-  require('./server/routes/marketing'),
   require('./server/routes/battle'),
 ]);
 
@@ -29,18 +32,22 @@ app.use((req, res, next) => {
 
 // Error handling
 app.use((err, req, res, next) => {
-  if (err instanceof FileUploadException) {
-    return res.send({ msg: err.msg });
+  console.log(err.fullLog);
+  if (err instanceof SQLException) {
+    return res.status(400).json({ msg: err.message });
+  }
+  if (err instanceof APIException) {
+    return res.status(err.status).json({ msg: err.message });
   }
   console.log(err);
-  res.status(500).send('Internal Server Error');
+  return res.status(500).json({ msg: 'Internal Server Error' });
 });
 
-const httpServer = app.listen(SERVER_PORT, () => {
+const httpServer = app.listen(port, () => {
   Cache.connect().catch(() => {
     console.log('redis connect fail');
   });
   console.log(`Listening at port ${SERVER_PORT}`);
 });
 
-module.exports = httpServer;
+module.exports = { app, httpServer };

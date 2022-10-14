@@ -1,12 +1,6 @@
 require('dotenv').config();
 const Battle = require('../models/battle');
 
-const createBattle = async (req, res) => {
-  console.log('creating..');
-  await Battle.createBattle();
-  return res.status(200).send('battle created');
-};
-
 const getBattles = async (req, res) => {
   const { status, type } = req.query;
   let { keyword, paging } = req.query;
@@ -17,7 +11,7 @@ const getBattles = async (req, res) => {
   if (status === 'finished') {
     isFinish = 1;
   }
-  if (!+paging) {
+  if (!+paging || +paging < 0) {
     paging = 0;
   }
   let firstBattler;
@@ -41,25 +35,23 @@ const getBattles = async (req, res) => {
       data: [],
     });
   }
+
+  // Add CDN url to picture.
   const battles = [];
   for (let i = 0; i < firstBattler.length; i += 1) {
     firstBattler[i].firstUserPicture = process.env.AWS_DISTRIBUTION_NAME + firstBattler[i].firstUserPicture;
     secondBattler[i].secondUserPicture = process.env.AWS_DISTRIBUTION_NAME + secondBattler[i].secondUserPicture;
     battles.push({ ...firstBattler[i], ...secondBattler[i] });
   }
+
   return res.status(200).json({
     data: battles,
   });
 };
 
 const ifBattleExists = async (req, res) => {
+  // check battle detail.
   const { battleName } = req.params;
-  if (battleName.length > 30) {
-    return res.status(400).json({
-      msg: 'Battle name should not be larger than 30 characters.',
-    });
-  }
-  // TODO: check battle detail.
   const checkExists = await Battle.ifBattleExists(battleName);
   if (checkExists === 1) {
     return res.status(400).json({
@@ -72,5 +64,5 @@ const ifBattleExists = async (req, res) => {
 };
 
 module.exports = {
-  createBattle, getBattles, ifBattleExists,
+  getBattles, ifBattleExists,
 };
