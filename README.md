@@ -25,8 +25,8 @@ Bunny Code was borned to cope with the problem. Bunny Code is dedicated to help 
 
 ```
 // first user
-Account: domingo0204@gmail.com
-Password: test123456
+Account: domingoos@gmail.com
+Password: test1234
 
 // second user (for battle)
 Account: guest@gmail.com
