@@ -41,7 +41,7 @@ class Workspace extends Sandbox {
   }
 
   createKillScript() {
-    return `sh ./server/services/shell_script/memory_metrics.sh \
+    return `sh ./server/services/shell_script/kill_container.sh \
     -c ${this.containerName} \
     -h ${this.host} \
     -i ${this.identityFile} \
