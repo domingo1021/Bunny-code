@@ -7,8 +7,6 @@ const { APIException } = require('./exceptions/api_exception');
 const { getAllHosts } = require('../models/host');
 const { Exception } = require('./exceptions/exception');
 const SandboxFactory = require('./sandboxs/sandboxFactory');
-const Workspace = require('./sandboxs/workspace');
-const BattleValley = require('./sandboxs/battleValley');
 
 const { CPU_THRESHOLD, MEM_THRESHOLD } = process.env;
 
@@ -53,24 +51,19 @@ function setLog(msg) {
 }
 
 async function runCommand(killScript, sandboxScript) {
-  // TODO: deal with OOM
   // Set if runtime exists.
   const currentFunctionName = 'runCommand';
   const threshold = 10000;
   const timeout = setTimeout(async () => {
     await exec(killScript);
-    throw new APIException(
-      'Script executes timeout, runtime exceeds 10 seconds.',
-      `User code ${sandboxScript} is terminated due to timeout.`,
-      400,
-      currentFunctionName,
-    );
+    return 'kill timeout';
   }, threshold);
 
   // Execute users codes with child process.
   try {
-    const { stdout } = await exec(sandboxScript);
+    const { stdout, stderr } = await exec(sandboxScript);
     clearTimeout(timeout);
+    console.log(stdout, stderr);
     return stdout;
   } catch (error) {
     clearTimeout(timeout);
@@ -167,6 +160,15 @@ async function compile(type, codes, sandboxArgs) {
   const killScript = sandbox.createKillScript();
 
   try {
+    const result = await runCommand(killScript, sandboxScript);
+    if (result === 'kill timeout') {
+      throw new APIException(
+        'Script executes timeout for 10 seconds',
+        `User code ${codes} is terminated due to timeout.`,
+        400,
+        'runCommand',
+      );
+    }
     return await runCommand(killScript, sandboxScript);
   } catch (error) {
     console.log(error.fullLog);
