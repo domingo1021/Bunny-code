@@ -32,7 +32,7 @@ class Workspace extends Sandbox {
   }
 
   createScript() {
-    return `sh workspace_sandbox.sh \
+    return `sh server/services/shell_script/workspace_sandbox.sh \
     -f ${this.fileName} \
     -d ${this.fileDir} \
     -c ${this.containerName} \
