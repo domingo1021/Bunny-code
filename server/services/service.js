@@ -52,16 +52,16 @@ function setLog(msg) {
   }, 0);
 }
 
-async function runCommand(containerName, cmd) {
+async function runCommand(killScript, sandboxScript) {
   // TODO: deal with OOM
   // Set if runtime exists.
   const currentFunctionName = 'runCommand';
   const threshold = 10000;
   const timeout = setTimeout(async () => {
-    await exec(`docker kill ${containerName}`);
+    await exec(killScript);
     throw new APIException(
       'Script executes timeout, runtime exceeds 10 seconds.',
-      `User code ${cmd} is terminated due to timeout.`,
+      `User code ${sandboxScript} is terminated due to timeout.`,
       400,
       currentFunctionName,
     );
@@ -69,19 +69,20 @@ async function runCommand(containerName, cmd) {
 
   // Execute users codes with child process.
   try {
-    const { stdout } = await exec(cmd);
+    const { stdout } = await exec(sandboxScript);
     clearTimeout(timeout);
     return stdout;
   } catch (error) {
+    clearTimeout(timeout);
     if (error.stderr === '') {
+      await exec(killScript);
       throw new APIException(
         'Script executes timeout',
-        `Runtime error with error code [${error.code}], for code = ${cmd}`,
+        `Runtime error with error code [${error.code}]`,
         400,
         currentFunctionName,
       );
     }
-    clearTimeout(timeout);
     const errMessage = error.stderr.split('\n').reduce((prev, curr) => {
       if (curr.includes('at') || curr.includes('bunny_code/') || curr === '') return prev;
       return `${prev}${curr}\n`;
@@ -162,11 +163,11 @@ async function compile(type, codes, sandboxArgs) {
   const host = await getAvailableHost();
   const sandbox = new SandboxFactory(type, host, codes, sandboxArgs).type;
   await sandbox.saveFile();
-  const shellScript = sandbox.createScript();
-  const containerName = sandbox.getContainerName();
+  const sandboxScript = sandbox.createSandboxScript();
+  const killScript = sandbox.createKillScript();
 
   try {
-    return await runCommand(containerName, shellScript);
+    return await runCommand(killScript, sandboxScript);
   } catch (error) {
     console.log(error.fullLog);
     return error.message;

@@ -31,13 +31,21 @@ class Workspace extends Sandbox {
     );
   }
 
-  createScript() {
+  createSandboxScript() {
     return `sh server/services/shell_script/workspace_sandbox.sh \
     -f ${this.fileName} \
     -d ${this.fileDir} \
     -c ${this.containerName} \
     -h ${this.host} \
     -i ${this.identityFile}`;
+  }
+
+  createKillScript() {
+    return `sh ./server/services/shell_script/memory_metrics.sh \
+    -c ${this.containerName} \
+    -h ${this.host} \
+    -i ${this.identityFile} \
+    `;
   }
 }
 
