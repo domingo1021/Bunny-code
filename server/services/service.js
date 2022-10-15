@@ -56,14 +56,15 @@ async function runCommand(killScript, sandboxScript) {
   const threshold = 10000;
   const timeout = setTimeout(async () => {
     await exec(killScript);
-    return 'kill timeout';
   }, threshold);
 
   // Execute users codes with child process.
   try {
     const { stdout, stderr } = await exec(sandboxScript);
     clearTimeout(timeout);
-    console.log(stdout, stderr);
+    if (stderr.includes('Error: No such container:')) {
+      return 'kill timeout';
+    }
     return stdout;
   } catch (error) {
     clearTimeout(timeout);
