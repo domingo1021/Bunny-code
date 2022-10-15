@@ -5,7 +5,7 @@ const pool = require('../../utils/rmdb');
 const timeDB = require('../../utils/timeSeriesDB');
 const { compile } = require('../services/service');
 
-const { INFLUX_ORG, INFLUX_BUCKET } = process.env;
+const { INFLUX_ORG, INFLUX_BUCKET, SANDBOX_FILE_EXTENSION } = process.env;
 
 const writeBattleFile = async (req, res) => {
   const { battleID } = req.body;
@@ -137,7 +137,11 @@ const queryRecord = async (req, res) => {
 const runCompiler = async (req, res) => {
   const { userID } = req.body;
   const { codes, fileName } = req.body;
-  const compilerResult = await compile(userID, fileName, codes);
+  const newFileName = fileName.split(SANDBOX_FILE_EXTENSION)[0];
+  const compilerResult = await compile('workspace', codes, {
+    userID,
+    fileName: newFileName,
+  });
   return res.status(200).json(compilerResult);
 };
 
