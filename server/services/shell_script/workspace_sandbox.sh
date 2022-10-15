@@ -13,7 +13,7 @@ scp -q -i ${identity_file} ${file_dir}${file_name} ubuntu@${host_name}:~/sandbox
 ssh -i ${identity_file} ubuntu@${host_name} "bash -s ${file_name} ${container_name}" << 'EOF'
 #!/bin/bash
 file_name=$1
-container_name=$3
+container_name=$2
 cd ~/sandbox_jobs
 docker run --cpus="0.2" --memory=20m -v $(pwd)/${file_name}:/bunny_code/${file_name} --name ${container_name} node-tool /bunny_code/${file_name}
 docker container inspect ${container_name} -f '{"OOM": {{json .State.OOMKilled}}}'
