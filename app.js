@@ -9,6 +9,7 @@ const cors = require('cors');
 const Cache = require('./utils/cache');
 const { APIException } = require('./server/services/exceptions/api_exception');
 const { SQLException } = require('./server/services/exceptions/sql_exception');
+const { Exception } = require('./server/services/exceptions/exception');
 
 const app = express();
 
@@ -38,6 +39,9 @@ app.use((err, req, res, next) => {
   }
   if (err instanceof APIException) {
     return res.status(err.status).json({ msg: err.message });
+  }
+  if (err instanceof Exception) {
+    return res.status(500).json({ msg: err.message });
   }
   console.log(err);
   return res.status(500).json({ msg: 'Internal Server Error' });
