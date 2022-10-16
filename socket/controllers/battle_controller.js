@@ -242,7 +242,7 @@ async function battleCompile(socket, queryObject) {
   try {
     compilerResult = await compile('battleValley', queryObject.codes, {
       battleID: queryObject.battleID,
-      battlerNumer: queryObject.battlerNumber,
+      battlerNumber: queryObject.battlerNumber,
       questionName: queryObject.questionName,
     });
     resultStatus = true;
