@@ -57,9 +57,12 @@ async function runCommand(killScript, sandboxScript) {
   // Set timeout to kill sandbox which have run over 10 sec.
   const timeout = setTimeout(async () => {
     try {
-      await exec(killScript);
+      const killResult = await exec(killScript);
+      const killStdout = killResult.stdout;
+      const killStderr = killResult.stderr;
+      console.log('kill try: ', killStderr, killStdout);
     } catch (error) {
-      console.log('Kill server error: ', error.stdout);
+      console.log('Kill server error: ', error);
     }
   }, threshold);
 
@@ -95,7 +98,7 @@ async function runCommand(killScript, sandboxScript) {
   }
 
   // throw if error occured due to users' codes.
-  if (stderr !== '') {
+  if (stderr !== undefined) {
     const errMessage = stderr.split('\n').reduce((prev, curr) => {
       if (curr.includes('at') || curr.includes('bunny_code/') || curr === '') return prev;
       return `${prev}${curr}\n`;
@@ -122,6 +125,9 @@ async function runCommand(killScript, sandboxScript) {
 
   // if all correct, then return stdout without OOM message.
   stdoutSplits.splice(-2);
+  if (stdoutSplits.length === 0) {
+    return '';
+  }
   return stdoutSplits.reduce((prev, curr) => `${prev}\n${curr}`);
 }
 
