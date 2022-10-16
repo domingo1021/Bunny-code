@@ -209,5 +209,5 @@ async function compile(type, codes, sandboxArgs) {
 }
 
 module.exports = {
-  wrapAsync, fileUploader, runCommand, compile, leetCodeCompile,
+  wrapAsync, fileUploader, runCommand, compile,
 };
