@@ -238,14 +238,14 @@ async function battleCompile(socket, queryObject) {
 
   // run codeing sanbox (like leetcode), for specific question (5 test case), and get answer.
   let compilerResult;
-  let resultStatus;
+  let resultSuccess = false;
   try {
     compilerResult = await compile('battleValley', queryObject.codes, {
       battleID: queryObject.battleID,
       battlerNumber: queryObject.battlerNumber,
       questionName: queryObject.questionName,
     });
-    resultStatus = true;
+    resultSuccess = true;
   } catch (error) {
     // compile error, make error message to compile result, will send back with test case.
     console.log(error.fullLog);
@@ -264,7 +264,7 @@ async function battleCompile(socket, queryObject) {
 
   // check the answer;
   try {
-    if (resultStatus === 'success') {
+    if (resultSuccess) {
       answers.forEach((answer, index) => {
         let currAnswer = Object.values(answer)[0];
         if (currAnswer.includes('[')) {

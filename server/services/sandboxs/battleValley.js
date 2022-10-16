@@ -1,6 +1,6 @@
 require('dotenv').config();
-const Sandbox = require('./sandbox');
 const fs = require('fs').promises;
+const Sandbox = require('./sandbox');
 
 const { SANDBOX_FILE_EXTENSION } = process.env;
 
