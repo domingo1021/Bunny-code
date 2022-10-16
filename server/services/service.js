@@ -59,20 +59,13 @@ async function runCommand(killScript, sandboxScript) {
   }, threshold);
 
   // Execute users codes with child process.
+  let stdout;
+  let stderr;
   try {
-    const { stdout, stderr } = await exec(sandboxScript);
+    const execResult = await exec(sandboxScript);
+    stdout = execResult.stdout;
+    stderr = execResult.stdout;
     clearTimeout(timeout);
-    if (stderr.includes('Error: No such container:')) {
-      return 'kill timeout';
-    }
-    if (stderr !== '') {
-      const errMessage = error.stderr.split('\n').reduce((prev, curr) => {
-        if (curr.includes('at') || curr.includes('bunny_code/') || curr === '') return prev;
-        return `${prev}${curr}\n`;
-      }, '');
-      // TODO: what to return ?
-    }
-    return stdout;
   } catch (error) {
     clearTimeout(timeout);
     if (error.stderr === '') {
@@ -84,12 +77,47 @@ async function runCommand(killScript, sandboxScript) {
         currentFunctionName,
       );
     }
-    const errMessage = error.stderr.split('\n').reduce((prev, curr) => {
+  }
+
+  // throw if container is killed and not found due to timeout.
+  if (stderr.includes('Error: No such container:')) {
+    throw new APIException(
+      'Script executes timeout for 10 seconds',
+      'User code is terminated due to timeout.',
+      400,
+      'runCommand',
+    );
+  }
+
+  // throw if error occured due to users' codes.
+  if (stderr !== '') {
+    const errMessage = stderr.split('\n').reduce((prev, curr) => {
       if (curr.includes('at') || curr.includes('bunny_code/') || curr === '') return prev;
       return `${prev}${curr}\n`;
     }, '');
-    throw new APIException(errMessage, `User run code stderr error: ${errMessage}`, 400, currentFunctionName);
+    throw new APIException(
+      errMessage,
+      `User run code error ${errMessage}`,
+      400,
+      currentFunctionName,
+    );
   }
+
+  // check if terminate due to Docker OOM
+  const stdoutSplits = stdout.split('\n');
+  const { OOM } = JSON.parse(stdoutSplits[stdoutSplits.length - 1]);
+  if (OOM) {
+    throw new APIException(
+      'Script runtime out of memory, please check codes again.',
+      'User run code terminated with OOM',
+      400,
+      currentFunctionName,
+    );
+  }
+
+  // if all correct, then return stdout without OOM message.
+  stdoutSplits.pop();
+  return stdoutSplits.reduce((prev, curr) => `${prev}\n${curr}`);
 }
 
 async function checkMemoryHealth(ipAddress) {
@@ -178,19 +206,7 @@ async function compile(type, codes, sandboxArgs) {
   const killScript = sandbox.createKillScript();
 
   try {
-    const result = await runCommand(killScript, sandboxScript);
-    if (result === 'kill timeout') {
-      throw new APIException(
-        'Script executes timeout for 10 seconds',
-        `User code ${codes} is terminated due to timeout.`,
-        400,
-        'runCommand',
-      );
-    }
     return await runCommand(killScript, sandboxScript);
-  } catch (error) {
-    console.log(error.fullLog);
-    return error.message;
   } finally {
     await sandbox.removeFile();
   }
