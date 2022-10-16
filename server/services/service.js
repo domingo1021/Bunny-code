@@ -95,7 +95,7 @@ async function runCommand(killScript, sandboxScript) {
   }
 
   // throw if error occured due to users' codes.
-  if (stderr !== undefined) {
+  if (stderr !== '') {
     const errMessage = stderr.split('\n').reduce((prev, curr) => {
       if (curr.includes('at') || curr.includes('bunny_code/') || curr === '') return prev;
       return `${prev}${curr}\n`;
