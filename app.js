@@ -44,7 +44,7 @@ app.use((err, req, res, next) => {
     return res.status(500).json({ msg: err.message });
   }
   console.log(err);
-  return res.status(500).json({ msg: 'Internal Server Error' });
+  return res.status(500).json({ msg: 'Server too busy, please try again' });
 });
 
 const httpServer = app.listen(port, () => {

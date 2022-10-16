@@ -57,10 +57,7 @@ async function runCommand(killScript, sandboxScript) {
   // Set timeout to kill sandbox which have run over 10 sec.
   const timeout = setTimeout(async () => {
     try {
-      const killResult = await exec(killScript);
-      const killStdout = killResult.stdout;
-      const killStderr = killResult.stderr;
-      console.log('kill try: ', killStderr, killStdout);
+      await exec(killScript);
     } catch (error) {
       console.log('Kill server error: ', error);
     }
@@ -193,6 +190,13 @@ async function getAvailableHost() {
     if (memHealthy && cpuHealthy) {
       return host;
     }
+
+    // if not success, wait for others return
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 3000);
+    });
   }));
   return targetHost;
 }
