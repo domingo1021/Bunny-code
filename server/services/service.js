@@ -100,8 +100,7 @@ async function checkMemoryHealth(ipAddress) {
     const memTotal = Number(metrics[1].split(' ')[1]);
     return 1 - (memAvailable / memTotal) < MEM_THRESHOLD;
   } catch (error) {
-    // Something wrong for the server.
-    // TODO: 登記 Server 不健康
+    // Something wrong for the server --> ex: record server not healthy.
     console.log(`Memory metrices for host: ${ipAddress} error: ${error.stderr}`);
     return false;
   }
@@ -117,9 +116,22 @@ function sum(arr) {
 }
 
 function cpuPercentage(stdout1, stdout2) {
-  const metrics1 = stdout1.split('\n').map((element) => element.split(' ')[1]);
-  const metrics2 = stdout2.split('\n').map((element) => element.split(' ')[1]);
-  const percentage = 1 - (metrics2[0] - metrics1[0]) / (sum(metrics2) - sum(metrics1));
+  const firstCheck = stdout1.split('\n').map((element) => element.split(' ')[1]);
+  const secondCheck = stdout2.split('\n').map((element) => element.split(' ')[1]);
+
+  const firstCPUFirstCheck = firstCheck.slice(0, 8);
+  const firstCPUSecondCheck = secondCheck.slice(0, 8);
+
+  const secondCPUFirstCheck = firstCheck.slice(8);
+  const secondCPUSecondCheck = secondCheck.slice(8);
+
+  console.log(`1: ${1 - (firstCPUSecondCheck[0] - firstCPUFirstCheck[0]) / (sum(firstCPUSecondCheck) - sum(firstCPUFirstCheck))}`);
+  console.log(`2: ${1 - (secondCPUSecondCheck[0] - secondCPUFirstCheck[0]) / (sum(secondCPUSecondCheck) - sum(secondCPUFirstCheck))}`);
+
+  const percentage = Math.min(
+    1 - (firstCPUSecondCheck[0] - firstCPUFirstCheck[0]) / (sum(firstCPUSecondCheck) - sum(firstCPUFirstCheck)),
+    1 - (secondCPUSecondCheck[0] - secondCPUFirstCheck[0]) / (sum(secondCPUSecondCheck) - sum(secondCPUFirstCheck)),
+  );
   console.log(percentage);
   return percentage;
 }
@@ -130,7 +142,7 @@ async function checkCPUHealth(ipAddress) {
     const stdout2 = await exec(`sh ./server/services/shell_script/cpu_metrics.sh -h ${ipAddress}`);
     return cpuPercentage(stdout1.stdout, stdout2.stdout) < CPU_THRESHOLD;
   } catch (error) {
-    // TODO: 登記 Server 不健康
+    // Something wrong for the server --> ex: record server not healthy.
     console.log(`CPU metrices for host: ${ipAddress} error: ${error.stderr}`);
     return false;
   }
