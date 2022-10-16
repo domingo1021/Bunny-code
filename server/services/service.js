@@ -150,27 +150,15 @@ async function getAvailableHost() {
   }));
   console.log('target host: ', targetHost);
   return targetHost;
-  // for (let i = 0; i < hosts.length; i += 1) {
-  //   const memHealthy = await checkMemoryHealth(hosts[i]);
-  //   const cpuHealthy = await checkCPUHealth(hosts[i]);
-  //   if (memHealthy && cpuHealthy) {
-  //     return hosts[i];
-  //   }
-  // }
-  // throw new Exception('Internal Server Error', 'Cannot get available server', 'getAvailableHost');
   // TODO: Get health metrics of EC2 server (call API to Prometheus exporter)
   // TODO: Prioritized EC2 server
   // TODO: return an assigned EC2 server to do sandbox jobs.
 }
 
-getAvailableHost().then((host) => {
-  console.log('getting host: ', host);
-});
-
 async function compile(type, codes, sandboxArgs) {
   const host = await getAvailableHost();
   if (!host) {
-    throw new Exception('Server in too busy to handle loading...', 'Cannot get healthy server', 'getAvailableHost');
+    throw new Exception('Bunny in too busy to run code.. try it later', 'Cannot get healthy server', 'getAvailableHost');
   }
   const sandbox = new SandboxFactory(type, host, codes, sandboxArgs).type;
   await sandbox.saveFile();
