@@ -2,7 +2,6 @@ const { Exception } = require('../../server/services/exceptions/exception');
 const { SocketException } = require('../../server/services/exceptions/socketException');
 const { jwtAuthenticate } = require('../../server/services/auth');
 const Cache = require('../../utils/cache');
-const { APIException } = require('../../server/services/exceptions/api_exception');
 
 const CLIENT_CATEGORY = {
   visitor: 0,

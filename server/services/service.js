@@ -1,7 +1,6 @@
 require('dotenv').config();
 const multer = require('multer');
 const util = require('util');
-const fs = require('fs').promises;
 const exec = util.promisify(require('child_process').exec);
 const { APIException } = require('./exceptions/api_exception');
 const { getAllHosts } = require('../models/host');
@@ -179,8 +178,7 @@ async function checkCPUHealth(ipAddress) {
 }
 
 async function getAvailableHost() {
-  // TODO: Cache host to Redis.
-  // Get all host from MySQL  accepted
+  // Get all host from MySQL
   const hosts = await getAllHosts();
 
   const targetHost = await Promise.race(hosts.map(async (host) => {
@@ -191,9 +189,6 @@ async function getAvailableHost() {
     }
   }));
   return targetHost;
-  // TODO: Get health metrics of EC2 server (call API to Prometheus exporter)
-  // TODO: Prioritized EC2 server
-  // TODO: return an assigned EC2 server to do sandbox jobs.
 }
 
 async function compile(type, codes, sandboxArgs) {
@@ -211,104 +206,6 @@ async function compile(type, codes, sandboxArgs) {
   } finally {
     await sandbox.removeFile();
   }
-}
-
-function preProcessCodes(codes, questionName) {
-  let newCodes = codes;
-  switch (questionName) {
-    case 'Two sum': {
-      newCodes += '\n module.exports = { twoSum };';
-      break;
-    }
-    case 'Hello world': {
-      newCodes += '\n module.exports = { helloWorld };';
-      break;
-    }
-    case 'Longest common subsequence': {
-      newCodes += '\n module.exports = { getLCS };';
-      break;
-    }
-    default:
-      break;
-  }
-  return newCodes;
-}
-
-async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
-  const processedCodes = preProcessCodes(codes, questionName);
-  const tmpTime = Date.now();
-  const containerName = `${battlerNumber}_${userID}_${tmpTime}`;
-  const tmpFileName = `battle_tmp_codes/${battlerNumber}_${userID}_${tmpTime}.js`;
-  const battleCodeRoute = `./Docker/sandbox/${tmpFileName}`;
-  fs.writeFileSync(battleCodeRoute, processedCodes);
-  let compilerResults;
-  let resultStatus;
-  switch (questionName) {
-    case 'Two sum': {
-      try {
-        compilerResults = await runCommand(
-          containerName,
-          `docker run \
-          --cpus="0.2" \
-          -v \$\(pwd\)/Docker/sandbox/${tmpFileName}:/bunny_code/${tmpFileName} \
-          -e TWO_SUM_FILE=./${tmpFileName} \
-          --name ${containerName} \
-          --rm sandbox \
-          /bunny_code/twoSum.js`,
-        );
-        resultStatus = 'success';
-      } catch (error) {
-        console.log(error.fullLog);
-        compilerResults = error.message;
-        resultStatus = 'failed';
-      }
-      break;
-    }
-    case 'Hello world': {
-      try {
-        compilerResults = await runCommand(
-          containerName,
-          `docker run \
-          --cpus="0.2" \
-          -v \$\(pwd\)/Docker/sandbox/${tmpFileName}:/bunny_code/${tmpFileName} \
-          -e HELLO_FILE=./${tmpFileName} \
-          --name ${containerName} \
-          --rm sandbox \
-          /bunny_code/hello.js`,
-        );
-        resultStatus = 'success';
-      } catch (error) {
-        console.log(error.fullLog);
-        compilerResults = error.message;
-        resultStatus = 'failed';
-      }
-      break;
-    }
-    case 'Longest common subsequence': {
-      try {
-        compilerResults = await runCommand(
-          containerName,
-          `docker run \
-          --cpus="0.2" \
-          -v \$\(pwd\)/Docker/sandbox/${tmpFileName}:/bunny_code/${tmpFileName} \
-          -e LCS_FILE=./${tmpFileName} \
-          --name ${containerName} \
-          --rm sandbox \
-          /bunny_code/subsequence.js`,
-        );
-        resultStatus = 'success';
-      } catch (error) {
-        console.log(error.fullLog);
-        compilerResults = error.message;
-        resultStatus = 'failed';
-      }
-      break;
-    }
-    default:
-      break;
-  }
-  fs.rmSync(battleCodeRoute);
-  return [compilerResults, resultStatus];
 }
 
 module.exports = {
