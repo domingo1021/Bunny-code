@@ -64,7 +64,7 @@ async function runCommand(killScript, sandboxScript) {
   try {
     const execResult = await exec(sandboxScript);
     stdout = execResult.stdout;
-    stderr = execResult.stdout;
+    stderr = execResult.stderr;
     clearTimeout(timeout);
   } catch (error) {
     clearTimeout(timeout);
@@ -105,7 +105,7 @@ async function runCommand(killScript, sandboxScript) {
 
   // check if terminate due to Docker OOM
   const stdoutSplits = stdout.split('\n');
-  const { OOM } = JSON.parse(stdoutSplits[stdoutSplits.length - 1]);
+  const { OOM } = JSON.parse(stdoutSplits[stdoutSplits.length - 2]);
   if (OOM) {
     throw new APIException(
       'Script runtime out of memory, please check codes again.',
@@ -116,7 +116,7 @@ async function runCommand(killScript, sandboxScript) {
   }
 
   // if all correct, then return stdout without OOM message.
-  stdoutSplits.pop();
+  stdoutSplits.splice(-2);
   return stdoutSplits.reduce((prev, curr) => `${prev}\n${curr}`);
 }
 
