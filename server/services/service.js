@@ -65,6 +65,13 @@ async function runCommand(killScript, sandboxScript) {
     if (stderr.includes('Error: No such container:')) {
       return 'kill timeout';
     }
+    if (stderr !== '') {
+      const errMessage = error.stderr.split('\n').reduce((prev, curr) => {
+        if (curr.includes('at') || curr.includes('bunny_code/') || curr === '') return prev;
+        return `${prev}${curr}\n`;
+      }, '');
+      // TODO: what to return ?
+    }
     return stdout;
   } catch (error) {
     clearTimeout(timeout);
@@ -85,16 +92,6 @@ async function runCommand(killScript, sandboxScript) {
   }
 }
 
-function composeShell(shell, fileName, targetDir, containerName, hostName, identityName) {
-  return `sh ${shell} \
-  -f ${fileName} \
-  -d ${targetDir} \
-  -c ${containerName} \
-  -h ${hostName} \
-  -i ${identityName} \
-  `;
-}
-
 async function checkMemoryHealth(ipAddress) {
   try {
     const { stdout } = await exec(`sh ./server/services/shell_script/memory_metrics.sh -h ${ipAddress}`);
@@ -104,7 +101,9 @@ async function checkMemoryHealth(ipAddress) {
     return 1 - (memAvailable / memTotal) < MEM_THRESHOLD;
   } catch (error) {
     // Something wrong for the server.
+    // TODO: 登記 Server 不健康
     console.log(`Memory metrices for host: ${ipAddress} error: ${error.stderr}`);
+    return false;
   }
 }
 
@@ -131,7 +130,9 @@ async function checkCPUHealth(ipAddress) {
     const stdout2 = await exec(`sh ./server/services/shell_script/cpu_metrics.sh -h ${ipAddress}`);
     return cpuPercentage(stdout1.stdout, stdout2.stdout) < CPU_THRESHOLD;
   } catch (error) {
+    // TODO: 登記 Server 不健康
     console.log(`CPU metrices for host: ${ipAddress} error: ${error.stderr}`);
+    return false;
   }
 }
 
@@ -140,21 +141,37 @@ async function getAvailableHost() {
   // Get all host from MySQL  accepted
   const hosts = await getAllHosts();
 
-  for (let i = 0; i < hosts.length; i += 1) {
-    const memHealthy = await checkMemoryHealth(hosts[i]);
-    const cpuHealthy = await checkCPUHealth(hosts[i]);
+  const targetHost = await Promise.race(hosts.map(async (host) => {
+    const memHealthy = await checkMemoryHealth(host);
+    const cpuHealthy = await checkCPUHealth(host);
     if (memHealthy && cpuHealthy) {
-      return hosts[i];
+      return host;
     }
-  }
-  throw new Exception('Internal Server Error', 'Cannot get available server', 'getAvailableHost');
+  }));
+  console.log('target host: ', targetHost);
+  return targetHost;
+  // for (let i = 0; i < hosts.length; i += 1) {
+  //   const memHealthy = await checkMemoryHealth(hosts[i]);
+  //   const cpuHealthy = await checkCPUHealth(hosts[i]);
+  //   if (memHealthy && cpuHealthy) {
+  //     return hosts[i];
+  //   }
+  // }
+  // throw new Exception('Internal Server Error', 'Cannot get available server', 'getAvailableHost');
   // TODO: Get health metrics of EC2 server (call API to Prometheus exporter)
   // TODO: Prioritized EC2 server
   // TODO: return an assigned EC2 server to do sandbox jobs.
 }
 
+getAvailableHost().then((host) => {
+  console.log('getting host: ', host);
+});
+
 async function compile(type, codes, sandboxArgs) {
   const host = await getAvailableHost();
+  if (!host) {
+    throw new Exception('Server in too busy to handle loading...', 'Cannot get healthy server', 'getAvailableHost');
+  }
   const sandbox = new SandboxFactory(type, host, codes, sandboxArgs).type;
   await sandbox.saveFile();
   const sandboxScript = sandbox.createSandboxScript();
