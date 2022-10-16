@@ -10,5 +10,5 @@ done
 ssh -i ${identity_file} ubuntu@${host_name} "bash -s ${container_name}" << 'EOF'
 #!/bin/bash
 container_name=$1
-docker kill ${container_name}
+docker rm -f ${container_name}
 EOF
