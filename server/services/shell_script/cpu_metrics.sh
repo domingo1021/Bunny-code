@@ -5,4 +5,4 @@ do
         esac
 done
 
-curl http://${host_name}:9100/metrics | grep -E "^node_cpu_seconds"
+curl --max-time 3 http://${host_name}:9100/metrics | grep -E "^node_cpu_seconds"

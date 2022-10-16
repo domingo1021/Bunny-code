@@ -5,4 +5,4 @@ do
         esac
 done
 
-curl http://${host_name}:9100/metrics | grep -E "^node_memory_MemAvailable_bytes|^node_memory_MemTotal_bytes"
+curl --max-time 3 http://${host_name}:9100/metrics | grep -E "^node_memory_MemAvailable_bytes|^node_memory_MemTotal_bytes"
