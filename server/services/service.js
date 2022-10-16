@@ -1,8 +1,13 @@
+require('dotenv').config();
 const multer = require('multer');
 const util = require('util');
-const fs = require('fs');
 const exec = util.promisify(require('child_process').exec);
 const { APIException } = require('./exceptions/api_exception');
+const { getAllHosts } = require('../models/host');
+const { Exception } = require('./exceptions/exception');
+const SandboxFactory = require('./sandboxs/sandboxFactory');
+
+const { CPU_THRESHOLD, MEM_THRESHOLD } = process.env;
 
 const fileUploader = multer({
   storage: multer.memoryStorage(),
@@ -44,160 +49,163 @@ function setLog(msg) {
   }, 0);
 }
 
-async function runCommand(containerName, cmd) {
+async function runCommand(killScript, sandboxScript) {
   // Set if runtime exists.
   const currentFunctionName = 'runCommand';
   const threshold = 10000;
+
+  // Set timeout to kill sandbox which have run over 10 sec.
   const timeout = setTimeout(async () => {
-    await exec(`docker kill ${containerName}`);
-    throw new APIException(
-      'Script executes timeout, runtime exceeds 10 seconds.',
-      `User code ${cmd} is terminated due to timeout.`,
-      400,
-      currentFunctionName,
-    );
+    try {
+      await exec(killScript);
+    } catch (error) {
+      console.log('Kill server error: ', error.stdout);
+    }
   }, threshold);
 
   // Execute users codes with child process.
+  let stdout;
+  let stderr;
   try {
-    const { stdout } = await exec(cmd);
+    const execResult = await exec(sandboxScript);
+    stdout = execResult.stdout;
+    stderr = execResult.stderr;
     clearTimeout(timeout);
-    return stdout;
   } catch (error) {
+    clearTimeout(timeout);
     if (error.stderr === '') {
+      await exec(killScript);
       throw new APIException(
         'Script executes timeout',
-        `Runtime error with error code [${error.code}], for code = ${cmd}`,
+        `Runtime error with error code [${error.code}]`,
         400,
         currentFunctionName,
       );
     }
-    clearTimeout(timeout);
-    const errMessage = error.stderr.split('\n').reduce((prev, curr) => {
+  }
+
+  // throw if container is killed and not found due to timeout.
+  if (stderr.includes('Error: No such container:')) {
+    throw new APIException(
+      'Script executes timeout for 10 seconds',
+      'User code is terminated due to timeout.',
+      400,
+      'runCommand',
+    );
+  }
+
+  // throw if error occured due to users' codes.
+  if (stderr !== '') {
+    const errMessage = stderr.split('\n').reduce((prev, curr) => {
       if (curr.includes('at') || curr.includes('bunny_code/') || curr === '') return prev;
       return `${prev}${curr}\n`;
     }, '');
-    throw new APIException(errMessage, `User run code stderr error: ${errMessage}`, 400, currentFunctionName);
-  }
-}
-
-async function compile(userID, fileName, codes) {
-  const tmpTime = Date.now();
-  const userCodeRoute = `./Docker/sandbox/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`;
-  fs.writeFileSync(userCodeRoute, codes);
-  let compilerResult;
-  try {
-    compilerResult = await runCommand(
-      `${userID}_${tmpTime}`,
-      `docker run \
-      --cpus="0.2" \
-      -v \$\(pwd\)/Docker/sandbox/user_tmp_codes:/bunny_code/user_tmp_codes \
-      --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
+    throw new APIException(
+      errMessage,
+      `User run code error ${errMessage}`,
+      400,
+      currentFunctionName,
     );
+  }
+
+  // check if terminate due to Docker OOM
+  const stdoutSplits = stdout.split('\n');
+  const { OOM } = JSON.parse(stdoutSplits[stdoutSplits.length - 2]);
+  if (OOM) {
+    throw new APIException(
+      'Script runtime out of memory, please check codes again.',
+      'User run code terminated with OOM',
+      400,
+      currentFunctionName,
+    );
+  }
+
+  // if all correct, then return stdout without OOM message.
+  stdoutSplits.splice(-2);
+  return stdoutSplits.reduce((prev, curr) => `${prev}\n${curr}`);
+}
+
+async function checkMemoryHealth(ipAddress) {
+  try {
+    const { stdout } = await exec(`sh ./server/services/shell_script/memory_metrics.sh -h ${ipAddress}`);
+    const metrics = stdout.split('\n');
+    const memAvailable = Number(metrics[0].split(' ')[1]);
+    const memTotal = Number(metrics[1].split(' ')[1]);
+    return 1 - (memAvailable / memTotal) < MEM_THRESHOLD;
   } catch (error) {
-    console.log(error.fullLog);
-    compilerResult = error.message;
+    // Something wrong for the server --> ex: record server not healthy.
+    console.log(`Memory metrices for host: ${ipAddress} error: ${error.stderr}`);
+    return false;
   }
-  fs.rmSync(userCodeRoute);
-  return compilerResult;
 }
 
-function preProcessCodes(codes, questionName) {
-  let newCodes = codes;
-  switch (questionName) {
-    case 'Two sum': {
-      newCodes += '\n module.exports = { twoSum };';
-      break;
+function sum(arr) {
+  return arr.reduce((prev, curr) => {
+    if (curr === undefined) {
+      return prev;
     }
-    case 'Hello world': {
-      newCodes += '\n module.exports = { helloWorld };';
-      break;
-    }
-    case 'Longest common subsequence': {
-      newCodes += '\n module.exports = { getLCS };';
-      break;
-    }
-    default:
-      break;
-  }
-  return newCodes;
+    return Number(prev) + Number(curr);
+  }, 0);
 }
 
-async function leetCodeCompile(battlerNumber, userID, codes, questionName) {
-  const processedCodes = preProcessCodes(codes, questionName);
-  const tmpTime = Date.now();
-  const containerName = `${battlerNumber}_${userID}_${tmpTime}`;
-  const tmpFileName = `battle_tmp_codes/${battlerNumber}_${userID}_${tmpTime}.js`;
-  const battleCodeRoute = `./Docker/sandbox/${tmpFileName}`;
-  fs.writeFileSync(battleCodeRoute, processedCodes);
-  let compilerResults;
-  let resultStatus;
-  switch (questionName) {
-    case 'Two sum': {
-      try {
-        compilerResults = await runCommand(
-          containerName,
-          `docker run \
-          --cpus="0.2" \
-          -v \$\(pwd\)/Docker/sandbox/${tmpFileName}:/bunny_code/${tmpFileName} \
-          -e TWO_SUM_FILE=./${tmpFileName} \
-          --name ${containerName} \
-          --rm sandbox \
-          /bunny_code/twoSum.js`,
-        );
-        resultStatus = 'success';
-      } catch (error) {
-        console.log(error.fullLog);
-        compilerResults = error.message;
-        resultStatus = 'failed';
-      }
-      break;
-    }
-    case 'Hello world': {
-      try {
-        compilerResults = await runCommand(
-          containerName,
-          `docker run \
-          --cpus="0.2" \
-          -v \$\(pwd\)/Docker/sandbox/${tmpFileName}:/bunny_code/${tmpFileName} \
-          -e HELLO_FILE=./${tmpFileName} \
-          --name ${containerName} \
-          --rm sandbox \
-          /bunny_code/hello.js`,
-        );
-        resultStatus = 'success';
-      } catch (error) {
-        console.log(error.fullLog);
-        compilerResults = error.message;
-        resultStatus = 'failed';
-      }
-      break;
-    }
-    case 'Longest common subsequence': {
-      try {
-        compilerResults = await runCommand(
-          containerName,
-          `docker run \
-          --cpus="0.2" \
-          -v \$\(pwd\)/Docker/sandbox/${tmpFileName}:/bunny_code/${tmpFileName} \
-          -e LCS_FILE=./${tmpFileName} \
-          --name ${containerName} \
-          --rm sandbox \
-          /bunny_code/subsequence.js`,
-        );
-        resultStatus = 'success';
-      } catch (error) {
-        console.log(error.fullLog);
-        compilerResults = error.message;
-        resultStatus = 'failed';
-      }
-      break;
-    }
-    default:
-      break;
+function cpuPercentage(stdout1, stdout2) {
+  const firstCheck = stdout1.split('\n').map((element) => element.split(' ')[1]);
+  const secondCheck = stdout2.split('\n').map((element) => element.split(' ')[1]);
+
+  const firstCPUFirstCheck = firstCheck.slice(0, 8);
+  const firstCPUSecondCheck = secondCheck.slice(0, 8);
+
+  const secondCPUFirstCheck = firstCheck.slice(8);
+  const secondCPUSecondCheck = secondCheck.slice(8);
+
+  const percentage = Math.min(
+    1 - (firstCPUSecondCheck[0] - firstCPUFirstCheck[0]) / (sum(firstCPUSecondCheck) - sum(firstCPUFirstCheck)),
+    1 - (secondCPUSecondCheck[0] - secondCPUFirstCheck[0]) / (sum(secondCPUSecondCheck) - sum(secondCPUFirstCheck)),
+  );
+  return percentage;
+}
+
+async function checkCPUHealth(ipAddress) {
+  try {
+    const stdout1 = await exec(`sh ./server/services/shell_script/cpu_metrics.sh -h ${ipAddress}`);
+    const stdout2 = await exec(`sh ./server/services/shell_script/cpu_metrics.sh -h ${ipAddress}`);
+    return cpuPercentage(stdout1.stdout, stdout2.stdout) < CPU_THRESHOLD;
+  } catch (error) {
+    // Something wrong for the server --> ex: record server not healthy.
+    console.log(`CPU metrices for host: ${ipAddress} error: ${error.stderr}`);
+    return false;
   }
-  fs.rmSync(battleCodeRoute);
-  return [compilerResults, resultStatus];
+}
+
+async function getAvailableHost() {
+  // Get all host from MySQL
+  const hosts = await getAllHosts();
+
+  const targetHost = await Promise.race(hosts.map(async (host) => {
+    const memHealthy = await checkMemoryHealth(host);
+    const cpuHealthy = await checkCPUHealth(host);
+    if (memHealthy && cpuHealthy) {
+      return host;
+    }
+  }));
+  return targetHost;
+}
+
+async function compile(type, codes, sandboxArgs) {
+  const host = await getAvailableHost();
+  if (!host) {
+    throw new Exception('Bunny in too busy to run code.. try it later', 'Cannot get healthy server', 'getAvailableHost');
+  }
+  const sandbox = new SandboxFactory(type, host, codes, sandboxArgs).type;
+  await sandbox.saveFile();
+  const sandboxScript = sandbox.createSandboxScript();
+  const killScript = sandbox.createKillScript();
+
+  try {
+    return await runCommand(killScript, sandboxScript);
+  } finally {
+    await sandbox.removeFile();
+  }
 }
 
 module.exports = {

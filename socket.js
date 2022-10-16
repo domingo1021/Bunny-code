@@ -31,7 +31,7 @@ io.on('connection', (socket) => {
   socket.on('setReady', wrapAsync(Battle.setReady));
   socket.on('queryBattler', wrapAsync(Battle.queryBattler));
   socket.on('newCodes', wrapAsync(Battle.broadcastNewCodes));
-  socket.on('compile', wrapAsync(Battle.compile));
+  socket.on('compile', wrapAsync(Battle.battleCompile));
   socket.on('getWinnerData', wrapAsync(Battle.getWinnerData));
   socket.on('leaveBattle', wrapAsync(Battle.leaveBattle));
 

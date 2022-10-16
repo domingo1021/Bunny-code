@@ -6,7 +6,7 @@ const {
 } = require('../controllers/compiler');
 const uploadS3 = require('../services/cloudStorage');
 
-router.post('/compiler', runCompiler);
+router.post('/compiler', wrapAsync(runCompiler));
 
 router.route('/record').post(writeRecord);
 

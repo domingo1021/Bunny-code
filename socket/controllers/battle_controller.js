@@ -4,7 +4,7 @@ const Battle = require('../models/battle_model');
 const { CLIENT_CATEGORY } = require('../services/service');
 const { SocketException } = require('../../server/services/exceptions/socketException');
 const { checkCacheReady } = require('../services/service');
-const { leetCodeCompile } = require('../../server/services/service');
+const { compile } = require('../../server/services/service');
 
 let ioServer;
 
@@ -222,7 +222,7 @@ function prepareTestCase(corrections, jsonResult, answers) {
   return testCase;
 }
 
-async function compile(socket, queryObject) {
+async function battleCompile(socket, queryObject) {
   const battleObject = await Cache.hGetAll(`${socket.battleID}`);
   const currentUserObject = JSON.parse(battleObject[`${socket.user.id}`]);
 
@@ -237,12 +237,20 @@ async function compile(socket, queryObject) {
   await Cache.HSET(`${socket.battleID}`, `${socket.user.id}`, JSON.stringify(currentUserObject));
 
   // run codeing sanbox (like leetcode), for specific question (5 test case), and get answer.
-  const [compilerResult, resultStatus] = await leetCodeCompile(
-    queryObject.battlerNumber,
-    queryObject.battleID,
-    queryObject.codes,
-    queryObject.questionName,
-  );
+  let compilerResult;
+  let resultSuccess = false;
+  try {
+    compilerResult = await compile('battleValley', queryObject.codes, {
+      battleID: queryObject.battleID,
+      battlerNumber: queryObject.battlerNumber,
+      questionName: queryObject.questionName,
+    });
+    resultSuccess = true;
+  } catch (error) {
+    // compile error, make error message to compile result, will send back with test case.
+    console.log(error.fullLog);
+    compilerResult = error.message;
+  }
 
   // get question answer from cache (better performance in checking answer).
   const answers = [];
@@ -256,7 +264,7 @@ async function compile(socket, queryObject) {
 
   // check the answer;
   try {
-    if (resultStatus === 'success') {
+    if (resultSuccess) {
       answers.forEach((answer, index) => {
         let currAnswer = Object.values(answer)[0];
         if (currAnswer.includes('[')) {
@@ -382,7 +390,7 @@ module.exports = (io) => {
     queryBattler,
     setReady,
     broadcastNewCodes,
-    compile,
+    battleCompile,
     getWinnerData,
     leaveBattle,
   };
