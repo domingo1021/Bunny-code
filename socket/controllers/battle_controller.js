@@ -222,7 +222,7 @@ function prepareTestCase(corrections, jsonResult, answers) {
   return testCase;
 }
 
-async function compile(socket, queryObject) {
+async function battleCompile(socket, queryObject) {
   const battleObject = await Cache.hGetAll(`${socket.battleID}`);
   const currentUserObject = JSON.parse(battleObject[`${socket.user.id}`]);
 
@@ -238,14 +238,14 @@ async function compile(socket, queryObject) {
 
   // run codeing sanbox (like leetcode), for specific question (5 test case), and get answer.
   let compilerResult;
-  let resultStatus
+  let resultStatus;
   try {
     compilerResult = await compile('battleValley', queryObject.codes, {
       battleID: queryObject.battleID,
       battlerNumer: queryObject.battlerNumber,
       questionName: queryObject.questionName,
     });
-    resultStatus = true
+    resultStatus = true;
   } catch (error) {
     // compile error, make error message to compile result, will send back with test case.
     console.log(error.fullLog);
@@ -390,7 +390,7 @@ module.exports = (io) => {
     queryBattler,
     setReady,
     broadcastNewCodes,
-    compile,
+    battleCompile,
     getWinnerData,
     leaveBattle,
   };
