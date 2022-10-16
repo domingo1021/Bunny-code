@@ -59,7 +59,7 @@ async function runCommand(killScript, sandboxScript) {
     try {
       await exec(killScript);
     } catch (error) {
-      console.log('Kill server error: ', error.stdout);
+      console.log('Kill server error: ', error);
     }
   }, threshold);
 
@@ -95,7 +95,7 @@ async function runCommand(killScript, sandboxScript) {
   }
 
   // throw if error occured due to users' codes.
-  if (stderr !== '') {
+  if (stderr !== undefined) {
     const errMessage = stderr.split('\n').reduce((prev, curr) => {
       if (curr.includes('at') || curr.includes('bunny_code/') || curr === '') return prev;
       return `${prev}${curr}\n`;
@@ -122,6 +122,9 @@ async function runCommand(killScript, sandboxScript) {
 
   // if all correct, then return stdout without OOM message.
   stdoutSplits.splice(-2);
+  if (stdoutSplits.length === 0) {
+    return '';
+  }
   return stdoutSplits.reduce((prev, curr) => `${prev}\n${curr}`);
 }
 
@@ -187,6 +190,13 @@ async function getAvailableHost() {
     if (memHealthy && cpuHealthy) {
       return host;
     }
+
+    // if not success, wait for others return
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 3000);
+    });
   }));
   return targetHost;
 }
