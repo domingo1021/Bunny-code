@@ -54,8 +54,14 @@ async function runCommand(killScript, sandboxScript) {
   // Set if runtime exists.
   const currentFunctionName = 'runCommand';
   const threshold = 10000;
+
+  // Set timeout to kill sandbox which have run over 10 sec.
   const timeout = setTimeout(async () => {
-    await exec(killScript);
+    try {
+      await exec(killScript);
+    } catch (error) {
+      console.log('Kill server error: ', error.stdout);
+    }
   }, threshold);
 
   // Execute users codes with child process.
@@ -184,7 +190,6 @@ async function getAvailableHost() {
       return host;
     }
   }));
-  console.log('target host: ', targetHost);
   return targetHost;
   // TODO: Get health metrics of EC2 server (call API to Prometheus exporter)
   // TODO: Prioritized EC2 server
@@ -207,39 +212,6 @@ async function compile(type, codes, sandboxArgs) {
     await sandbox.removeFile();
   }
 }
-
-// async function compile(userID, fileFullName, codes) {
-//   const fileName = fileFullName.split(SANDBOX_FILE_EXTENSION)[0];
-//   const tmpTime = Date.now();
-//   const userCodeRoute = `./Docker/sandbox/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`;
-//   fs.writeFileSync(userCodeRoute, codes);
-//   const containerName = `${userID}_${tmpTime}`;
-//   // const hostName = await
-//   const shellCMD = composeShell(
-//     './server/services/ssh_sandbox.sh',
-//     `${userID}_${fileName}_${tmpTime}.js`,
-//     containerName,
-//     'user_tmp_codes',
-//     hostName,
-//     SSH_IDENTITY_FILE,
-//   );
-//   let compilerResult;
-//   // TODO: file_name, target_dir, container_name, host_name
-//   try {
-//     compilerResult = await runCommand(
-//       `${userID}_${tmpTime}`,
-//       `docker run \
-//       --cpus="0.2" \
-//       -v \$\(pwd\)/Docker/sandbox/user_tmp_codes:/bunny_code/user_tmp_codes \
-//       --rm --name ${userID}_${tmpTime} node-tool /bunny_code/user_tmp_codes/${userID}_${fileName}_${tmpTime}.js`,
-//     );
-//   } catch (error) {
-//     console.log(error.fullLog);
-//     compilerResult = error.message;
-//   }
-//   fs.rmSync(userCodeRoute);
-//   return compilerResult;
-// }
 
 function preProcessCodes(codes, questionName) {
   let newCodes = codes;
