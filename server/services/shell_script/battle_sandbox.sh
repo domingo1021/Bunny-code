@@ -19,7 +19,7 @@ test_case_env=$2
 test_case_script=$3
 container_name=$4
 cd ~/sandbox_jobs
-docker run --cpus="0.2" --memory=20m -e ${test_case_env}=${file_name} -v $(pwd)/${file_name}:/bunny_code/${file_name} --name ${container_name} node-tool /bunny_code/${test_case_script}
+docker run --cpus="0.2" --memory=20m -e ${test_case_env}=${file_name} -v $(pwd)/${file_name}:/bunny_code/${file_name} --name ${container_name} sandbox /bunny_code/${test_case_script}
 docker container inspect ${container_name} -f '{"OOM": {{json .State.OOMKilled}}}'
 docker rm ${container_name} >/dev/null 2>&1
 rm -f ~/sandbox_jobs/${file_name}
