@@ -4,7 +4,7 @@ const Battle = require('../models/battle_model');
 const { CLIENT_CATEGORY } = require('../services/service');
 const { SocketException } = require('../../server/services/exceptions/socketException');
 const { checkCacheReady } = require('../services/service');
-const { leetCodeCompile } = require('../../server/services/service');
+const { compile } = require('../../server/services/service');
 
 let ioServer;
 
@@ -237,12 +237,20 @@ async function compile(socket, queryObject) {
   await Cache.HSET(`${socket.battleID}`, `${socket.user.id}`, JSON.stringify(currentUserObject));
 
   // run codeing sanbox (like leetcode), for specific question (5 test case), and get answer.
-  const [compilerResult, resultStatus] = await leetCodeCompile(
-    queryObject.battlerNumber,
-    queryObject.battleID,
-    queryObject.codes,
-    queryObject.questionName,
-  );
+  let compilerResult;
+  let resultStatus
+  try {
+    compilerResult = await compile('battleValley', queryObject.codes, {
+      battleID: queryObject.battleID,
+      battlerNumer: queryObject.battlerNumber,
+      questionName: queryObject.questionName,
+    });
+    resultStatus = true
+  } catch (error) {
+    // compile error, make error message to compile result, will send back with test case.
+    console.log(error.fullLog);
+    compilerResult = error.message;
+  }
 
   // get question answer from cache (better performance in checking answer).
   const answers = [];

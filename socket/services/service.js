@@ -2,6 +2,7 @@ const { Exception } = require('../../server/services/exceptions/exception');
 const { SocketException } = require('../../server/services/exceptions/socketException');
 const { jwtAuthenticate } = require('../../server/services/auth');
 const Cache = require('../../utils/cache');
+const { APIException } = require('../../server/services/exceptions/api_exception');
 
 const CLIENT_CATEGORY = {
   visitor: 0,
@@ -25,13 +26,13 @@ function wrapAsync(cb) {
     try {
       await cb(socket, emitObject);
     } catch (error) {
-      console.log('error occur!!!!!');
       if (error instanceof Exception) {
         console.log(error.fullLog);
         if (error instanceof SocketException) {
-          socket.emit(error.event);
+          return socket.emit(error.event);
         }
       } else if (error instanceof Error) console.log(error.stack);
+      return socket.emit('Internal server error');
     }
   };
 }
