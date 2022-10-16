@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.29, for macos12.4 (arm64)
 --
--- Host: localhost    Database: test
+-- Host: localhost    Database: bunny_test
 -- ------------------------------------------------------
 -- Server version	8.0.29
 
@@ -86,6 +86,19 @@ CREATE TABLE `file` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `host`
+--
+
+DROP TABLE IF EXISTS `host`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `host` (
+  `ip_address` varchar(15) NOT NULL,
+  PRIMARY KEY (`ip_address`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `project`
 --
 
@@ -147,25 +160,6 @@ CREATE TABLE `record` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `relationship`
---
-
-DROP TABLE IF EXISTS `relationship`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `relationship` (
-  `relationship_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `master_id` int unsigned NOT NULL,
-  `follower_id` int unsigned NOT NULL,
-  PRIMARY KEY (`relationship_id`),
-  KEY `master_id` (`master_id`),
-  KEY `follower_id` (`follower_id`),
-  CONSTRAINT `relationship_ibfk_1` FOREIGN KEY (`master_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
-  CONSTRAINT `relationship_ibfk_2` FOREIGN KEY (`follower_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `user`
 --
 
@@ -185,7 +179,7 @@ CREATE TABLE `user` (
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `user_name` (`user_name`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -217,4 +211,4 @@ CREATE TABLE `version` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2022-10-14 14:03:32
+-- Dump completed on 2022-10-16 18:13:21
