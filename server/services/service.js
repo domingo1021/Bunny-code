@@ -153,14 +153,10 @@ function cpuPercentage(stdout1, stdout2) {
   const secondCPUFirstCheck = firstCheck.slice(8);
   const secondCPUSecondCheck = secondCheck.slice(8);
 
-  console.log(`1: ${1 - (firstCPUSecondCheck[0] - firstCPUFirstCheck[0]) / (sum(firstCPUSecondCheck) - sum(firstCPUFirstCheck))}`);
-  console.log(`2: ${1 - (secondCPUSecondCheck[0] - secondCPUFirstCheck[0]) / (sum(secondCPUSecondCheck) - sum(secondCPUFirstCheck))}`);
-
   const percentage = Math.min(
     1 - (firstCPUSecondCheck[0] - firstCPUFirstCheck[0]) / (sum(firstCPUSecondCheck) - sum(firstCPUFirstCheck)),
     1 - (secondCPUSecondCheck[0] - secondCPUFirstCheck[0]) / (sum(secondCPUSecondCheck) - sum(secondCPUFirstCheck)),
   );
-  console.log(percentage);
   return percentage;
 }
 
