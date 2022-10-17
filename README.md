@@ -35,35 +35,53 @@ Password: test1234
 
 **Frontend Github repo**: [Bunny-code-vue](https://github.com/domingo1021/Bunny-code-vue)
 
-Bunny Code frontend separation project, developed with Vue.js frontend framework.
+**Backend repo**: [Bunny-code](https://github.com/domingo1021/Bunny-code)
 
 ## Demo
 
-gif
+- Replay coding process ( x1 )
+
+  ![image](./Archives/Replay-x1.gif)
+
+- Replay coding process ( x2 )
+
+  ![image](./Archives/Replay-x2.gif)
+
+- Run code (normal situation)
+
+  ![image](./Archives/Run-code.gif)
+
+- Run code (Out of memory)
+
+  ![image](./Archives/OOM.gif)
+
+- Battle valley
+
+  ![image](./Archives/Battle-valley.gif)
 
 ## Features - Workspace
 
-- `Record` and `replay` users' project in workspace
-- Provide `play`, `pause`, `speed up` and `slow down` to help user to replay coding processes as if watching video clips.
-- `Preview coding archives` of projects at the first time users go into the workspace.
-- Provide various `shortcut` to help developers edit project much faster.
-- Allow user `run codes` immediately after they edit codes or watch codes.
-- `Create version` from latest coding process and provide `version control`. Help user compare differences in version by replaying project's coding processes.
+- **Record** and **replay** users' project in workspace
+- Provide **play**, **pause**, **speed up** and **slow down** to help user to replay coding processes as if watching video clips.
+- **Preview coding archives** of projects at the first time users go into the workspace.
+- Provide various **shortcut** to help developers edit project much faster.
+- Allow user **run codes** immediately after they edit codes or watch codes.
+- **Create version** from latest coding process and provide **version control**. Help user compare differences in version by replaying project's coding processes.
 
 ## Features - Battle Valley
 
-- `Choose a question level`, `Launch a battle`, then user can compete with others in battle valley.
-- `Watch a live battle` in battle valley as long as user want.
-- `Run codes` to check the answer of the appointed question.
-- Compare `expected outputs` and `battler coding outputs` for test cases, help battlers to improve their codes.
-- `Share winner coding archives` of battles to help users learn from each other.
+- **Choose a question level**, **launch a battle**, then user can compete with others in battle valley.
+- **Watch a live battle** in battle valley as long as user want.
+- **Run codes** to check the answer of the appointed question.
+- Compare **expected outputs** and **battler coding outputs** for test cases, help battlers to improve their codes.
+- **Share winner coding archives** of battles to help users learn from each other.
 
 ## Tech stack
 
 - Backend: `Node.js` `Express` `Socket.IO`
 - Frontend: `HTML` `CSS` `Vue.js` `Bootstrap`
 - Database: `MySQL` `InfluxDB` `Redis`
-- Sandbox: `Shell`, `Docker`, `Prometheus exporter`
+- Sandbox: `Shell` `Docker` `Prometheus exporter`
 - Cloud services: `S3` `CloudFront` `Cloudwatch`
 - Continuous development: `GitHub Actions`
 
@@ -73,5 +91,5 @@ gif
 
 ## Future Features
 
-- More `shortcuts` in workspace. For example: `Redo`, `Undo`, and etc.
+- More `shortcuts` in workspace. For example: `redo`, `undo`, and etc.
 - `Friend` and `follower` mechanism. Help users invite battles to a target person.
