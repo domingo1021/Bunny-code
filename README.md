@@ -33,9 +33,9 @@ Account: guest@gmail.com
 Password: test1234
 ```
 
-**Frontend Github repo**: [Bunny-code-vue](https://github.com/domingo1021/Bunny-code-vue)
+**Frontend Repo**: [Bunny-code-vue](https://github.com/domingo1021/Bunny-code-vue)
 
-**Backend repo**: [Bunny-code](https://github.com/domingo1021/Bunny-code)
+**Backend Repo**: [Bunny-code](https://github.com/domingo1021/Bunny-code)
 
 ## Features - Workspace
 
