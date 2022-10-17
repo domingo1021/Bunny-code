@@ -15,9 +15,9 @@
 
 ## Background and Why Bunny Code
 
-Being a software engineer, we learn continuously to enrich ourselves. However, there are no integrated resources where we could learn from other people's `coding process` and edit our own project at the same time. Or even `battle with each other`.
+Being a software engineer, we learn continuously to enrich ourselves. However, there are no integrated resources where we could learn from other people's `coding processes` and edit our own project at the same time. Not to mention `battle with each other`.
 
-Bunny Code was borned to cope with the problem. Bunny Code is dedicated to help users learn by replaying coding processes as if video clips and practice by launching live battles. With Bunny Code, users can `edit codes`, `run codes`, `control versions`, `replaying codes`, `launches battle` whenever they want !
+Bunny Code was borned to cope with the problem. Bunny Code is dedicated to help users learn by replaying coding processes as if video clips and practice by launching live battles. With Bunny Code, users can `edit codes`, `run codes`, `control versions`, `replay codes`, `launch battles` whenever they want !
 
 ## Links
 
@@ -37,6 +37,23 @@ Password: test1234
 
 **Backend repo**: [Bunny-code](https://github.com/domingo1021/Bunny-code)
 
+## Features - Workspace
+
+- **Record** and **replay** users' projects in workspace
+- Provide **play**, **pause**, **speed up** and **slow down** to help user to replay coding processes as if watching video clips.
+- **Preview coding archives** of projects at the first time users go into the workspace.
+- Provide various **shortcuts** to help developers edit project much faster.
+- Allow user **run codes** immediately after they edit codes or watch codes.
+- **Create version** from latest coding process and provide **version control**. Help users compare differences between version by replaying projects' coding processes.
+
+## Features - Battle Valley
+
+- **Choose a question level**, **launch a battle**, then user can compete with others in battle valley.
+- **Watch a live battle** in battle valley as long as user want.
+- **Run codes** to check the answer of the appointed question.
+- Compare **expected outputs** and **battler coding outputs** for test cases, help battlers to improve their codes.
+- **Share winner coding archives** of battles to help users learn from each other.
+
 ## Demo
 
 - Replay coding process ( x1 )
@@ -47,7 +64,7 @@ Password: test1234
 
   ![image](./Archives/Replay-x2.gif)
 
-- Run code (normal situation)
+- Run code (Normal situation)
 
   ![image](./Archives/Run-code.gif)
 
@@ -59,30 +76,13 @@ Password: test1234
 
   ![image](./Archives/Battle-valley.gif)
 
-## Features - Workspace
-
-- **Record** and **replay** users' project in workspace
-- Provide **play**, **pause**, **speed up** and **slow down** to help user to replay coding processes as if watching video clips.
-- **Preview coding archives** of projects at the first time users go into the workspace.
-- Provide various **shortcut** to help developers edit project much faster.
-- Allow user **run codes** immediately after they edit codes or watch codes.
-- **Create version** from latest coding process and provide **version control**. Help user compare differences in version by replaying project's coding processes.
-
-## Features - Battle Valley
-
-- **Choose a question level**, **launch a battle**, then user can compete with others in battle valley.
-- **Watch a live battle** in battle valley as long as user want.
-- **Run codes** to check the answer of the appointed question.
-- Compare **expected outputs** and **battler coding outputs** for test cases, help battlers to improve their codes.
-- **Share winner coding archives** of battles to help users learn from each other.
-
 ## Tech stack
 
-- Backend: `Node.js` `Express` `Socket.IO`
 - Frontend: `HTML` `CSS` `Vue.js` `Bootstrap`
+- Backend: `Node.js` `Express` `Socket.IO`
 - Database: `MySQL` `InfluxDB` `Redis`
 - Sandbox: `Shell` `Docker` `Prometheus exporter`
-- Cloud services: `S3` `CloudFront` `Cloudwatch`
+- Cloud services: `S3` `CloudFront` `CloudWatch`
 - Continuous development: `GitHub Actions`
 
 ## System architechture
