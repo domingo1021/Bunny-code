@@ -206,7 +206,7 @@ async function compile(type, codes, sandboxArgs) {
   if (!host) {
     throw new Exception('Bunny in too busy to run code.. try it later', 'Cannot get healthy server', 'getAvailableHost');
   }
-  const sandbox = new SandboxFactory(type, host, codes, sandboxArgs).type;
+  const sandbox = SandboxFactory.createSandbox(type, host, codes, sandboxArgs);
   await sandbox.saveFile();
   const sandboxScript = sandbox.createSandboxScript();
   const killScript = sandbox.createKillScript();
