@@ -7,8 +7,8 @@ const sandboxType = {
 };
 
 class SandboxFactory {
-  constructor(type, host, codes, sandboxArgs) {
-    this.type = new sandboxType[type](host, codes, sandboxArgs);
+  static createSandbox(type, host, codes, sandboxArgs) {
+    return new sandboxType[type](host, codes, sandboxArgs);
   }
 }
 

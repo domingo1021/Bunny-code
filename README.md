@@ -10,7 +10,7 @@
 - [Features - Workspace](#features---workspace)
 - [Features - Battle Valley](#features---battle-valley)
 - [Tech Stack](#tech-stack)
-- [System architechture](#system-architechture)
+- [System Architechture](#system-architechture)
 - [Future Features](#future-features)
 
 ## Background and Why Bunny Code
