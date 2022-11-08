@@ -1,5 +1,5 @@
 const pool = require('../../utils/rmdb');
-const Exeception = require('../services/execption');
+const { SQLException } = require('../services/exceptions/sql_exception');
 
 const writeFile = async (fileName, fileURL, log, versionID) => {
   const connection = await pool.getConnection();
@@ -19,7 +19,13 @@ const writeRecord = async (versionID, baseURL, startTime, endTime) => {
   console.log('selectionResult: ', selectResult);
   if (selectResult.length !== 0) {
     connection.release();
-    throw new Exeception('Duplicated record in a version.', 400);
+    throw new SQLException(
+      'Duplicated record in a version.',
+      `Duplicated record already exists for version(id=${versionID})`,
+      'record',
+      'insert',
+      'writeRecord',
+    );
   }
   const insertSQL = 'INSERT INTO record (version_id, base_url, start_time, end_time) VALUES (?, ?, ?, ?);';
   const [recordCreate] = await connection.execute(insertSQL, [versionID, baseURL, startTime, endTime]);
