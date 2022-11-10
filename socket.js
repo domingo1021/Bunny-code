@@ -1,10 +1,12 @@
+require('dotenv').config();
 const { Server } = require('socket.io');
 const { httpServer } = require('./app');
 
+const { WHITE_LIST } = process.env;
 const io = new Server(httpServer, {
   path: '/api/socket/',
   cors: {
-    origin: 'https://www.domingoos.store',
+    origin: WHITE_LIST,
     methods: ['GET', 'POST'],
     credentials: true,
   },

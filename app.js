@@ -1,10 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-
-const {
-  TEST_PORT, SERVER_PORT, NODE_ENV, API_VERSION,
-} = process.env;
-const port = NODE_ENV === 'test' ? TEST_PORT : SERVER_PORT;
 const cors = require('cors');
 const Cache = require('./utils/cache');
 const { APIException } = require('./server/services/exceptions/api_exception');
@@ -12,8 +7,12 @@ const { SQLException } = require('./server/services/exceptions/sql_exception');
 const { Exception } = require('./server/services/exceptions/exception');
 
 const app = express();
+const {
+  TEST_PORT, SERVER_PORT, NODE_ENV, API_VERSION, WHITE_LIST,
+} = process.env;
+const port = NODE_ENV === 'test' ? TEST_PORT : SERVER_PORT;
 const corsOptions = {
-  origin: 'https://www.domingoos.store',
+  origin: WHITE_LIST,
   optionsSuccessStatus: 200,
 };
 
