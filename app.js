@@ -12,8 +12,12 @@ const { SQLException } = require('./server/services/exceptions/sql_exception');
 const { Exception } = require('./server/services/exceptions/exception');
 
 const app = express();
+const corsOptions = {
+  origin: 'https://www.domingoos.store',
+  optionsSuccessStatus: 200,
+};
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

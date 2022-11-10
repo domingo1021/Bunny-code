@@ -4,7 +4,7 @@ const { httpServer } = require('./app');
 const io = new Server(httpServer, {
   path: '/api/socket/',
   cors: {
-    origin: '*',
+    origin: 'https://www.domingoos.store',
     methods: ['GET', 'POST'],
     credentials: true,
   },
