@@ -36,7 +36,10 @@ public class ExecutionSteps {
     @Then("the run status is {string}")
     public void runStatus(String status) {
         assertThat(world.lastResponse().status()).as(world.lastResponse().body().toString()).isEqualTo(200);
-        assertThat(world.lastResponse().body().path("status").asString()).isEqualTo(status);
+        // The output says why a run was classified as it was — essential when only CI reproduces it.
+        assertThat(world.lastResponse().body().path("status").asString())
+                .as("run output: %s", world.lastResponse().body().path("output").asString())
+                .isEqualTo(status);
     }
 
     @Then("the run output is {string}")

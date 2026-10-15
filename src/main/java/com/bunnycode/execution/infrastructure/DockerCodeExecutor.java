@@ -10,6 +10,7 @@ import com.bunnycode.shared.error.BunnyException;
 import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,19 @@ class DockerCodeExecutor implements CodeExecutor {
 
     /** docker: 125 daemon error, 126 cannot invoke, 127 not found; ssh: 255 connection failure. */
     private static final Set<Integer> INFRASTRUCTURE_FAILURES = Set.of(125, 126, 127, 255);
+    /**
+     * 128 + SIGKILL. Inside the sandbox only the kernel's OOM killer sends it: our own time limit is
+     * detected (and reported as a timeout) before the exit code is looked at.
+     */
+    private static final int KILLED = 137;
+    /**
+     * V8 running out of memory by itself, before the kernel steps in. It aborts with one of these
+     * on stderr, depending on where the allocation failed: "FATAL ERROR: … JavaScript heap out of
+     * memory", or "Fatal process out of memory: …" (optionally prefixed with "#").
+     */
+    private static final Pattern V8_OUT_OF_MEMORY = Pattern.compile(
+            "^\\s*(?:#\\s*)?(?:FATAL ERROR:.*out of memory|Fatal process out of memory)",
+            Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
     private static final Duration HOUSEKEEPING_TIMEOUT = Duration.ofSeconds(10);
     private static final int HOUSEKEEPING_OUTPUT_BYTES = 4096;
 
@@ -66,10 +80,21 @@ class DockerCodeExecutor implements CodeExecutor {
             throw BunnyException.unavailable("execution.unavailable",
                     "The code runner is unavailable right now — try again in a moment.");
         }
-        if (run.stderr().contains("heap out of memory") || wasOomKilled(target, container)) {
+        if (ranOutOfMemory(run, target, container)) {
             return new ExecutionResult.OutOfMemory();
         }
         return new ExecutionResult.Failed(run.stdout(), StderrCleaner.clean(run.stderr()));
+    }
+
+    /**
+     * Three independent signals, because hosts differ in which one they give: the kill signal itself,
+     * V8's own abort message, and Docker's {@code OOMKilled} flag (unreliable on some cgroup v2 /
+     * systemd hosts, where it stays false even though the kernel killed the process).
+     */
+    private boolean ranOutOfMemory(ProcessResult run, CommandTransport target, String container) {
+        return run.exitCode() == KILLED
+                || V8_OUT_OF_MEMORY.matcher(run.stderr()).find()
+                || wasOomKilled(target, container);
     }
 
     private boolean wasOomKilled(CommandTransport target, String container) {

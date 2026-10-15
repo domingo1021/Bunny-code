@@ -69,11 +69,53 @@ class DockerCodeExecutorTest {
         assertThat(executor.execute("big()")).isEqualTo(new ExecutionResult.OutOfMemory());
     }
 
+    /* Regression: on cgroup v2 / systemd hosts (GitHub's Ubuntu runners) Docker can report
+       OOMKilled=false although the kernel killed the process — the SIGKILL exit is the evidence. */
+    @Test
+    @DisplayName("SIGKILL (exit 137) → OutOfMemory, even when Docker does not flag it")
+    void sigkillWithoutFlag() {
+        givenRun(new ProcessResult(137, "", "", false, false));
+        givenOomKilled(false);
+        assertThat(executor.execute("big()")).isEqualTo(new ExecutionResult.OutOfMemory());
+    }
+
+    @Test
+    @DisplayName("Docker's OOMKilled flag alone → OutOfMemory")
+    void flaggedWithOtherExitCode() {
+        givenRun(new ProcessResult(1, "", "", false, false));
+        givenOomKilled(true);
+        assertThat(executor.execute("big()")).isEqualTo(new ExecutionResult.OutOfMemory());
+    }
+
     @Test
     @DisplayName("V8 heap exhaustion → OutOfMemory")
     void heapOom() {
         givenRun(new ProcessResult(134, "", "FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory", false, false));
         assertThat(executor.execute("big()")).isEqualTo(new ExecutionResult.OutOfMemory());
+    }
+
+    @Test
+    @DisplayName("V8 aborting with 'Fatal process out of memory' → OutOfMemory")
+    void processOom() {
+        givenRun(new ProcessResult(133, "", """
+
+                <--- Last few GCs --->
+
+                #
+                # Fatal process out of memory: Zone
+                #
+                """, false, false));
+        givenOomKilled(false);
+        assertThat(executor.execute("big()")).isEqualTo(new ExecutionResult.OutOfMemory());
+    }
+
+    @Test
+    @DisplayName("a program that merely prints about memory is an ordinary failure")
+    void printsAboutMemory() {
+        givenRun(new ProcessResult(1, "", "Error: we are out of memory, honest\n    at [stdin]:1:7", false, false));
+        givenOomKilled(false);
+        assertThat(executor.execute("fake()"))
+                .isEqualTo(new ExecutionResult.Failed("", "Error: we are out of memory, honest"));
     }
 
     @Test
