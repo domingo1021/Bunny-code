@@ -1,0 +1,82 @@
+# Continuous integration for the Spring Boot API.
+#
+#   verify  Maven `verify`: unit and controller-slice tests, integration tests against real
+#           MySQL / Redis / InfluxDB / LocalStack / Docker sandbox (Testcontainers), the
+#           Cucumber BDD suite, Spring Modulith + ArchUnit checks and the JaCoCo coverage gate.
+#   image   builds the production Docker image (not pushed) so a broken Dockerfile fails the PR.
+#
+# Also called by release.yml, so nothing is released that did not pass exactly this.
+name: ci
+
+on:
+  pull_request:
+  push:
+    # `main` is covered by the release workflow, which runs this as its first stage.
+    branches: [v2]
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: maven verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      # The execution and battle tests run real code in this image.
+      - name: Pre-pull the sandbox image
+        run: docker pull node:24-alpine
+
+      - name: Verify
+        run: ./mvnw -B -ntp verify
+
+      - name: Test summary
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: |
+            target/surefire-reports/TEST-*.xml
+            target/failsafe-reports/TEST-*.xml
+          check_name: test results
+          job_summary: true
+          annotate_only: true
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: api-test-reports
+          retention-days: 14
+          path: |
+            target/surefire-reports
+            target/failsafe-reports
+            target/cucumber-reports
+            target/site/jacoco
+
+  image:
+    name: docker image builds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (not pushed)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max

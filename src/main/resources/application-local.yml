@@ -1,0 +1,40 @@
+# Local development against Docker/local/compose.yaml (see INSTRUCTION.md):
+#   ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+# `./mvnw spring-boot:test-run -Dspring-boot.run.profiles=local` also works: Testcontainers then
+# overrides the infrastructure settings below with its own containers.
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:${BUNNY_MYSQL_PORT:3306}/bunny_code
+    username: bunny
+    password: bunny
+  data:
+    redis:
+      host: localhost
+      port: ${BUNNY_REDIS_PORT:6379}
+
+bunny:
+  security:
+    jwt:
+      secret: local-development-secret-that-is-at-least-32-bytes
+    # The web app may be opened as either host name; both must be allowed for REST and STOMP.
+    # :3000 is `npm run dev`; :3100 is the frontend's integration suite.
+    allowed-origins: http://localhost:3000,http://127.0.0.1:3000,http://localhost:3100,http://127.0.0.1:3100
+  recording:
+    influx:
+      url: http://localhost:${BUNNY_INFLUX_PORT:8086}
+      token: local-influx-token
+      org: bunny
+      bucket: bunny
+  storage:
+    bucket: bunny-code
+    region: us-east-1
+    endpoint: http://localhost:${BUNNY_S3_PORT:4566}
+    access-key: test
+    secret-key: test
+    public-base-url: http://localhost:${BUNNY_S3_PORT:4566}/bunny-code
+  execution:
+    mode: local
+    image: node:24-alpine
+  battle:
+    # Longer than production's 10 s so a person in a second browser window has time to accept.
+    invitation-time-to-live: 30s
