@@ -1,9 +1,9 @@
-FROM redis:7.0
+FROM redis:7.4
 
-RUN mkdir -p /var/lib/redis/ \
-&& mkdir -p /usr/local/etc/redis/ \
-&& chmod 777 /var/lib/redis
-
+# redis.conf (from redis_example.conf; not committed — it holds the password) logs to
+# /var/log/redis and persists to /var/lib/redis, so both must exist and be writable.
+RUN mkdir -p /var/lib/redis /var/log/redis /usr/local/etc/redis \
+ && chown redis:redis /var/lib/redis /var/log/redis
 
 COPY redis.conf /usr/local/etc/redis/redis.conf
 

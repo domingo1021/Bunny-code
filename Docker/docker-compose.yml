@@ -1,61 +1,110 @@
-version: '1.0'
+# Production: the whole product on one machine, behind nginx on one origin.
+#
+#   nginx ─┬─ /       → web  (Next.js, image from the Bunny-code-vue repo)
+#          └─ /api/   → api  (Spring Boot, image from this repo) → MySQL, Redis, InfluxDB
+#
+# Object storage stays on S3/CloudFront; code runs on the remote sandbox hosts.
+#
+# `api` and `web` are pulled from GitHub Container Registry. Which tag runs is decided by
+# deploy/deploy.sh (called by the release workflows), which records it in deploy/images.env.
+# Secrets come from ../.env (see .env.example). See docs/CICD.md.
+name: bunny
 
 services:
-  web:
-    image: 'bunny-api:production'
+  api:
+    image: ${API_IMAGE:-ghcr.io/domingo1021/bunny-api}:${API_TAG:-main}
     container_name: bunny-api
-    ports:
-      - '3000:3000'
+    restart: unless-stopped
+    env_file: ../.env
     environment:
-      - SERVER_PORT=3000
-      - API_VERSION=${API_VERSION}
-      - INFLUX_URL=${INFLUX_URL}
-      - INFLUX_TOKEN=${INFLUX_TOKEN}
-      - INFLUX_ORG=${INFLUX_ORG}
-      - INFLUX_BUCKET=${INFLUX_BUCKET}
-      - DB_HOST=bunny-db
-      - DB_PORT=3306
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - CACHE_HOST=bunny-cache
-      - CACHE_PORT=6379
-      - CACHE_USER=${CACHE_USER}
-      - CACHE_PASSWORD=${CACHE_PASSWORD}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
-      - S3_RECORD_FOLDER=${S3_RECORD_FOLDER}
-      - S3_USER_IMAGE_FOLDER=${S3_USER_IMAGE_FOLDER}
-      - S3_BATTLE_FOLDER=${S3_BATTLE_FOLDER}
-      - AWS_DISTRIBUTION_NAME=${AWS_DISTRIBUTION_NAME}
-      - DEFAULT_TEMPLATE_FILE=${DEFAULT_TEMPLATE_FILE}
-    depends_on:
-      - mysql
-      - redis
-  redis:
-    image: 'bunny-cache:production'
-    container_name: bunny-cache
-    ports:
-      - '6379:6379'
-  mysql:
-    image: 'bunny-db:production'
-    container_name: bunny-db
-    ports:
-      - '3306:3306'
-    environment:
-      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
-  nginx:
-    image: 'bunny-nginx:production'
-    container_name: bunny-nginx
-    ports:
-      - '80:80'
-      - '443:443'
-    depends_on:
-      - web
+      DB_HOST: mysql
+      DB_PORT: 3306
+      CACHE_HOST: redis
+      CACHE_PORT: 6379
+      INFLUX_URL: http://influxdb:8086
     volumes:
-      - ./ReverseProxy/certificate_final.crt:${CERTIFICATE_KEY}
-      - ./ReverseProxy/private.key:${PRIVATE_KEY}
-      - /app:/app
-networks:
-  default:
-    driver: bridge
+      # The SSH key the API uses to reach the sandbox hosts (SSH_IDENTITY_FILE in .env).
+      - ${SANDBOX_SSH_KEY_PATH:-./secrets/sandbox_key}:/run/secrets/sandbox_key:ro
+    expose:
+      - "8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      influxdb:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /actuator/health/readiness HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q UP <&3'"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/domingo1021/bunny-web}:${WEB_TAG:-main}
+    container_name: bunny-web
+    restart: unless-stopped
+    environment:
+      # Server-side rendering talks to the API inside this network instead of going out
+      # through the public host. (The browser uses the URL baked in at build time.)
+      API_INTERNAL_URL: http://api:8080/api/v2
+    expose:
+      - "3000"
+    # The image defines its own HEALTHCHECK.
+
+  mysql:
+    image: mysql:8.4
+    container_name: bunny-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 10s
+
+  redis:
+    build: ./Cache
+    image: bunny-cache:production
+    pull_policy: build
+    container_name: bunny-cache
+    restart: unless-stopped
+
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: bunny-influx
+    restart: unless-stopped
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUX_ADMIN_USER}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUX_ADMIN_PASSWORD}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUX_ORG}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUX_BUCKET}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_TOKEN}
+    volumes:
+      - influx-data:/var/lib/influxdb2
+
+  nginx:
+    build: ./ReverseProxy
+    image: bunny-nginx:production
+    pull_policy: build
+    container_name: bunny-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./ReverseProxy/certificate_final.crt:/etc/nginx/certs/certificate_final.crt:ro
+      - ./ReverseProxy/private.key:/etc/nginx/certs/private.key:ro
+    depends_on:
+      - api
+      - web
+
+volumes:
+  mysql-data:
+  influx-data:

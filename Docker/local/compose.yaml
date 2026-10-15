@@ -1,0 +1,70 @@
+# Backing services for running Bunny Code on your machine (see INSTRUCTION.md).
+#
+#   docker compose -f Docker/local/compose.yaml up -d
+#
+# The API itself runs from your IDE or `./mvnw spring-boot:run -Dspring-boot.run.profiles=local`,
+# and the web app with `npm run dev` — both on the host, both talking to these ports.
+# Everything here is disposable: `down -v` wipes all data.
+name: bunny-local
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: bunny_code
+      MYSQL_USER: bunny
+      MYSQL_PASSWORD: bunny
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "${BUNNY_MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      retries: 30
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "${BUNNY_REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+
+  influxdb:
+    image: influxdb:2.7-alpine
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: bunny
+      DOCKER_INFLUXDB_INIT_PASSWORD: bunny-password
+      DOCKER_INFLUXDB_INIT_ORG: bunny
+      DOCKER_INFLUXDB_INIT_BUCKET: bunny
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: local-influx-token
+    ports:
+      - "${BUNNY_INFLUX_PORT:-8086}:8086"
+    volumes:
+      - influx-data:/var/lib/influxdb2
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 5s
+
+  # S3 stand-in. The init hook creates the bucket, opens it to the browser (CORS) and uploads
+  # the starter template, the battle questions and the default avatar from ./s3-seed.
+  localstack:
+    image: localstack/localstack:4.4
+    environment:
+      SERVICES: s3
+    ports:
+      - "${BUNNY_S3_PORT:-4566}:4566"
+    volumes:
+      - ./localstack/init-s3.sh:/etc/localstack/init/ready.d/init-s3.sh:ro
+      - ./s3-seed:/seed:ro
+    healthcheck:
+      test: ["CMD", "bash", "-c", "awslocal s3api head-object --bucket bunny-code --key question/two_sum/question.md"]
+      interval: 5s
+      retries: 30
+
+volumes:
+  mysql-data:
+  influx-data:

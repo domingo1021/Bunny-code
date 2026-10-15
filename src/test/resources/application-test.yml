@@ -1,0 +1,24 @@
+# Settings for every Spring test context. Infrastructure endpoints come from Testcontainers
+# (see TestcontainersConfiguration); only application knobs live here.
+spring:
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: true
+
+bunny:
+  security:
+    jwt:
+      secret: test-secret-that-is-definitely-long-enough-for-hs256
+    allowed-origins: http://localhost:3000
+  execution:
+    mode: local
+    image: node:24-alpine
+    timeout: 5s
+    runs-per-minute: 1000
+  battle:
+    invitation-time-to-live: 10s
+
+logging:
+  level:
+    org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: warn

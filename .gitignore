@@ -1,25 +1,29 @@
-.DS_store
-
-node_modules
-
+.DS_Store
 .env
+*.env.local
 
-# docker redis config
+### Maven ###
+target/
+.mvn/wrapper/maven-wrapper.jar
+
+### IDE ###
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+
+### Docker / nginx secrets (only *_example files are committed) ###
 Docker/Cache/redis.conf
-
-# docker nginx config 
 Docker/ReverseProxy/nginx.conf
 Docker/ReverseProxy/sites-enabled/bunny.conf
 Docker/ReverseProxy/certificate_final.crt
 Docker/ReverseProxy/private.key
 
-# for test purpose.
-test.js
-question
-
-Docker/sandbox/user_tmp_codes/*
-!Docker/sandbox/user_tmp_codes/.gitkeep
-Docker/sandbox/battle_tmp_codes/*
-!Docker/sandbox/battle_tmp_codes/.gitkeep
-
-./backup
+# Production-only files on the server (sandbox SSH key, deploy state)
+Docker/secrets/
+Docker/deploy/images.env

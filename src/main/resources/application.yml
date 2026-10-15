@@ -1,0 +1,113 @@
+spring:
+  application:
+    name: bunny-code
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:bunny_code}
+    username: ${DB_USER:bunny}
+    password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      # Every connection works in UTC, whatever the JVM or server zone — so Hibernate, plain JDBC
+      # and v1's rows all agree on what a DATETIME means.
+      data-source-properties:
+        connectionTimeZone: UTC
+        forceConnectionTimeZoneToSession: true
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+        default_batch_fetch_size: 50
+        query:
+          fail_on_pagination_over_collection_fetch: true
+          in_clause_parameter_padding: true
+
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 1
+
+  data:
+    redis:
+      host: ${CACHE_HOST:localhost}
+      port: ${CACHE_PORT:6379}
+      username: ${CACHE_USER:}
+      password: ${CACHE_PASSWORD:}
+
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, modulith
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+bunny:
+  security:
+    jwt:
+      secret: ${JWT_SECRET_KEY:}
+      issuer: bunny-code
+      time-to-live: 12h
+    session-cookie-name: bunny_session
+    allowed-origins: ${ALLOWED_ORIGINS:https://www.domingoos.store}
+  storage:
+    bucket: ${AWS_BUCKET_NAME:bunny-code}
+    region: ${AWS_REGION:ap-northeast-1}
+    public-base-url: ${AWS_DISTRIBUTION_NAME:https://cdn.domingoos.store}
+    endpoint: ${S3_ENDPOINT:}
+    access-key: ${S3_ACCESS_KEY:}
+    secret-key: ${S3_SECRET_KEY:}
+    record-folder: ${S3_RECORD_FOLDER:record}
+    battle-folder: ${S3_BATTLE_FOLDER:battle}
+    default-template-key: ${DEFAULT_TEMPLATE_FILE:/record/user_0/project_0/version_0/test.js}
+  recording:
+    influx:
+      url: ${INFLUX_URL:http://localhost:8086}
+      token: ${INFLUX_TOKEN:}
+      org: ${INFLUX_ORG:bunny}
+      bucket: ${INFLUX_BUCKET:bunny}
+    max-events-per-session: 50000
+  execution:
+    mode: ${SANDBOX_MODE:ssh}
+    image: ${SANDBOX_IMAGE:node-tool}
+    cpus: 0.2
+    memory: 20m
+    pids-limit: 64
+    timeout: 10s
+    max-output-bytes: 65536
+    runs-per-minute: 10
+    ssh:
+      user: ubuntu
+      identity-file: ${SSH_IDENTITY_FILE:}
+    host-health:
+      metrics-port: 9100
+      probe-timeout: 3s
+      cpu-threshold: ${CPU_THRESHOLD:0.8}
+      memory-threshold: ${MEM_THRESHOLD:0.8}
+  workspace:
+    lock-time-to-live: 2h
+  battle:
+    invitation-time-to-live: 10s
+    submission-chances: 3
+    visible-test-cases: 3
