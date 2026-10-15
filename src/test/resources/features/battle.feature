@@ -5,7 +5,7 @@ Feature: Battle Valley
 
   Background:
     Given "alice" has an account
-    And "bob" has an accou  nt
+    And "bob" has an account
     And "carol" has an account
     And "alice", "bob" and "carol" are online
 
