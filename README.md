@@ -22,8 +22,6 @@ Bunny Code was borned to cope with the problem. Bunny Code is dedicated to help 
 
 ## Links
 
-**Bunny Code Homepage**: [Bunny Code](https://domingoos.store)
-
 ```
 // first user
 Account: domingoos@gmail.com
@@ -34,9 +32,9 @@ Account: guest@gmail.com
 Password: test1234
 ```
 
-**Frontend Repo**: [Bunny-code-vue](https://github.com/domingo1021/Bunny-code-vue)
+**Frontend Repo**: [bunny-code-web](https://github.com/domingo1021/bunny-code-web)
 
-**Backend Repo**: [Bunny-code](https://github.com/domingo1021/Bunny-code)
+**Backend Repo**: [bunny-code-server](https://github.com/domingo1021/bunny-code-server)
 
 ## Features - Workspace
 
@@ -79,7 +77,7 @@ Password: test1234
 
 ## Tech stack
 
-- Frontend: `Vue.js` `Bootstrap` (moving to `Next.js` + `TypeScript`, see [the plan](./docs/MIGRATION_PLAN.md))
+- Frontend: `Next.js` + `TypeScript`
 - Backend: `Java 25` `Spring Boot 4.1` `Spring Data JPA / Hibernate 7` `Spring Security (JWT)` `STOMP over WebSocket` `Spring Modulith`
 - Database: `MySQL` (Flyway migrations) `InfluxDB` `Redis`
 - Sandbox: `Docker` (no network, read-only, 0.2 CPU / 20 MB / 10 s) `node-exporter`
@@ -97,22 +95,6 @@ docker compose -f Docker/local/compose.yaml up -d --wait         # MySQL, Redis,
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local          # API on :8080
 node Docker/local/seed.mjs                                       # demo accounts and projects
 ```
-
-**[docs/CICD.md](./docs/CICD.md)** describes the CI/CD pipelines of both repositories and the
-production deployment. **[INSTRUCTION.md](./INSTRUCTION.md)** walks through the whole local setup — infrastructure,
-API, demo data, the web app against it, and every backend and frontend test suite.
-
-| Layer | What it covers | Where |
-|---|---|---|
-| Unit | domain rules, services, judge, sandbox command building (`*Test`) | `src/test/java` |
-| Slice | controllers with the real security chain and validation (`*ControllerTest`) | `src/test/java` |
-| Integration | JPA queries incl. N+1 statement counts, Redis Lua scripts, InfluxDB, S3, the real Docker sandbox (`*IT`) | `src/test/java` |
-| BDD | end-to-end behaviour over HTTP and STOMP, in Gherkin | `src/test/resources/features` |
-
-Reports: `target/cucumber-reports/cucumber.html`, `target/site/jacoco/index.html`,
-module diagrams in `target/spring-modulith-docs`. The API contract for clients is
-[`.claude/skills/backend/references/api-surface.md`](./.claude/skills/backend/references/api-surface.md);
-configuration is listed in [`.env.example`](./.env.example).
 
 ## System architecture
 
@@ -164,26 +146,6 @@ flowchart TB
     api -- "SSH: docker run" --> sandbox
     api -. "probe load, pick the least busy host" .-> exporter
 ```
-
-- **One origin.** nginx terminates TLS and routes `/` to the Next.js server and `/api/v2` (REST and the
-  STOMP WebSocket) to the Spring Boot API, so the browser talks to a single host.
-- **Next.js** renders pages on the server, calling the API for data, then runs as a React app in the
-  browser: REST for projects, recordings and battle listings, STOMP for invitations and live battles.
-- **Spring Boot API** is a modular monolith (Spring Modulith): `identity`, `project`, `workspace`,
-  `execution`, `battle` and `storage` modules over a `shared` module (security, errors, realtime).
-  - **MySQL** holds the relational data (via JPA and Flyway); **Redis** holds short-lived shared state —
-    live battle code and chances, invitations, edit locks, rate limits; **InfluxDB** stores the recorded
-    edit events that replays are rebuilt from.
-  - **S3** stores files (each version's code, recording base files, questions, avatars, winners' code);
-    browsers download them through **CloudFront**.
-  - **Code execution** — workspace runs and battle submissions — goes over SSH to the least-loaded
-    sandbox host (chosen from its `node_exporter` metrics) and runs in a throw-away Docker container
-    with no network and hard CPU, memory and time limits.
-- **GitHub Actions** verifies both repositories and builds and deploys the `web` and `api` images.
-
-This is the target production layout. The Next.js container, the single-origin nginx routing and the
-image-based deploy are still being set up — see [`docs/REMAINING_TASKS.md`](./docs/REMAINING_TASKS.md)
-(T2, T3).
 
 ## Future Features
 
